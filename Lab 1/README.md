@@ -207,6 +207,17 @@ video feed of whichever scene you want to capture.)
 
 **Include your first attempts at recording the wizarded set-up here.**
 
+### First Wizarded Interaction Attempt
+
+In this first run, one teammate performs the interaction while the other
+secretly controls the phone's light response. We used it to test whether the
+fire's timing and changes in brightness were legible before refining the final
+video sketch.
+
+[![Play the first wizarded interaction attempt](assets/video-first-attempt-preview.jpg)](assets/video.mp4)
+
+_[Watch or download the MP4 directly](assets/video.mp4) · 38 seconds_
+
 ## Part E. (optional) Costume the Device
 
 Only now should you worry about what the device looks like. Costume your phone so it reads
