@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Campfire — Interaction Storyboard</title>
+    <script>
+      if (new URLSearchParams(window.location.search).has("render")) {
+        document.documentElement.classList.add("render");
+      }
+    </script>
+    <style>
+      :root {
+        --paper: #f7f3ea;
+        --ink: #282a2c;
+        --muted: #6c7377;
+        --rule: #d5d4ce;
+        --ember: #d98c45;
+        --night: #8192a0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: #deddd8;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .poster {
+        width: min(100%, 1600px);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 42px 50px 34px;
+      }
+
+      .masthead {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(360px, 1fr);
+        gap: 42px;
+        align-items: end;
+        padding-bottom: 16px;
+      }
+
+      .eyebrow,
+      .stage,
+      .meta dt,
+      .arc-label {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 7px 0 5px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(48px, 5.2vw, 82px);
+        font-weight: 500;
+        letter-spacing: -0.045em;
+        line-height: 0.95;
+      }
+
+      .dek {
+        max-width: 760px;
+        margin: 15px 0 0;
+        color: var(--muted);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 18px;
+        font-style: italic;
+        line-height: 1.35;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 16px 26px;
+        margin: 0;
+      }
+
+      .meta div {
+        padding-top: 4px;
+      }
+
+      .meta dd {
+        margin: 5px 0 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 19px;
+        line-height: 1.25;
+      }
+
+      .sequence {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px 28px;
+        margin-top: 28px;
+      }
+
+      .panel {
+        position: relative;
+        margin: 0;
+      }
+
+      .image-shell {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 4 / 3;
+        background: #fbf8f1;
+        border: 1px solid #c9c8c2;
+      }
+
+      .image-shell img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .panel-number {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        color: #f7f6f2;
+        background: #747a7d;
+        border-radius: 50%;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+
+      figcaption {
+        display: grid;
+        grid-template-columns: 92px minmax(0, 1fr);
+        gap: 12px;
+        padding-top: 12px;
+      }
+
+      .caption-copy {
+        padding-left: 0;
+      }
+
+      .caption-copy h2 {
+        margin: -2px 0 4px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 21px;
+        font-weight: 600;
+        line-height: 1.1;
+      }
+
+      .caption-copy p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .interaction-arc {
+        display: grid;
+        grid-template-columns: 160px minmax(0, 1fr);
+        gap: 24px;
+        align-items: center;
+        margin-top: 28px;
+        padding: 18px 20px;
+        background: rgba(129, 146, 160, 0.08);
+        border-radius: 14px;
+      }
+
+      .arc-steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .arc-step {
+        position: relative;
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        text-align: center;
+      }
+
+      .arc-step:not(:last-child)::after {
+        position: absolute;
+        z-index: 0;
+        top: 22px;
+        left: calc(50% + 30px);
+        width: calc(100% - 60px);
+        height: 1px;
+        content: "";
+        background: var(--rule);
+      }
+
+      .arc-icon {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        color: var(--night);
+        background: var(--paper);
+        border-radius: 50%;
+      }
+
+      .arc-icon svg {
+        width: 23px;
+        height: 23px;
+      }
+
+      .arc-step:nth-child(2) .arc-icon {
+        color: var(--ember);
+      }
+
+      .arc-step strong {
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .render,
+      .render body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      .render .poster {
+        width: 100%;
+        height: 100vh;
+        min-height: 0;
+        padding: 32px 42px 24px;
+      }
+
+      .render .masthead {
+        grid-template-columns: 1.6fr 1fr;
+        gap: 36px;
+        padding-bottom: 12px;
+      }
+
+      .render h1 {
+        font-size: 64px;
+      }
+
+      .render .dek {
+        margin-top: 10px;
+        font-size: 16px;
+      }
+
+      .render .sequence {
+        gap: 16px 28px;
+        margin-top: 20px;
+      }
+
+      .render .image-shell {
+        aspect-ratio: 16 / 7.5;
+      }
+
+      .render figcaption {
+        padding-top: 9px;
+      }
+
+      .render .caption-copy h2 {
+        font-size: 19px;
+      }
+
+      .render .caption-copy p {
+        font-size: 12px;
+      }
+
+      .render .interaction-arc {
+        margin-top: 18px;
+        padding: 14px 20px;
+      }
+
+      @media (max-width: 850px) {
+        .poster {
+          padding: 28px 20px;
+        }
+
+        .masthead,
+        .sequence {
+          grid-template-columns: 1fr;
+        }
+
+        .masthead {
+          gap: 26px;
+        }
+
+        .meta {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .interaction-arc {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+      }
+
+      @media print {
+        @page {
+          size: A3 landscape;
+          margin: 0;
+        }
+
+        html,
+        body {
+          background: var(--paper);
+        }
+
+        .poster {
+          width: 420mm;
+          min-height: 297mm;
+          padding: 11mm 13mm 9mm;
+        }
+
+        .masthead {
+          grid-template-columns: 1.5fr 1fr;
+        }
+
+        .sequence {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 5mm 7mm;
+          margin-top: 6mm;
+        }
+
+        .image-shell {
+          aspect-ratio: 16 / 7;
+        }
+
+        h1 {
+          font-size: 54px;
+        }
+
+        .interaction-arc {
+          margin-top: 5mm;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="poster">
+      <header class="masthead">
+        <section>
+          <p class="eyebrow">Lab 1 · Interaction Storyboard</p>
+          <h1>The Campfire</h1>
+          <p class="dek">
+            The original interactive light: gather round, tend it, and watch.
+          </p>
+        </section>
+
+        <dl class="meta">
+          <div>
+            <dt>Person</dt>
+            <dd>A cautious fire tender</dd>
+          </div>
+          <div>
+            <dt>Scenario</dt>
+            <dd>A changing relationship with a responsive flame</dd>
+          </div>
+        </dl>
+      </header>
+
+      <section class="sequence" aria-label="Four-panel interaction sequence">
+        <figure class="panel">
+          <div class="image-shell">
+            <img
+              src="assets/storyboard/scene-1-approach.png"
+              alt="A person cautiously approaches a weak campfire at night."
+            />
+            <span class="panel-number" aria-hidden="true">01</span>
+          </div>
+          <figcaption>
+            <p class="stage">Gather</p>
+            <div class="caption-copy">
+              <h2>Drawn to the glow</h2>
+              <p>A weak flame invites the person to move closer.</p>
+            </div>
+          </figcaption>
+        </figure>
+
+        <figure class="panel">
+          <div class="image-shell">
+            <img
+              src="assets/storyboard/scene-2-flare.png"
+              alt="The campfire flares as the startled person jumps backward."
+            />
+            <span class="panel-number" aria-hidden="true">02</span>
+          </div>
+          <figcaption>
+            <p class="stage">Tend</p>
+            <div class="caption-copy">
+              <h2>The fire answers</h2>
+              <p>Added fuel triggers a sudden flare, pushing the person away.</p>
+            </div>
+          </figcaption>
+        </figure>
+
+        <figure class="panel">
+          <div class="image-shell">
+            <img
+              src="assets/storyboard/scene-3-return.png"
+              alt="The person tentatively returns after the campfire becomes stable."
+            />
+            <span class="panel-number" aria-hidden="true">03</span>
+          </div>
+          <figcaption>
+            <p class="stage">Return</p>
+            <div class="caption-copy">
+              <h2>Trust is tested</h2>
+              <p>As the light settles, the person cautiously approaches again.</p>
+            </div>
+          </figcaption>
+        </figure>
+
+        <figure class="panel">
+          <div class="image-shell">
+            <img
+              src="assets/storyboard/scene-4-dawn.png"
+              alt="The seated person watches the last embers fade as night ends."
+            />
+            <span class="panel-number" aria-hidden="true">04</span>
+          </div>
+          <figcaption>
+            <p class="stage">Watch</p>
+            <div class="caption-copy">
+              <h2>Night reaches its end</h2>
+              <p>The person stays with the light until only embers remain.</p>
+            </div>
+          </figcaption>
+        </figure>
+      </section>
+
+      <footer class="interaction-arc">
+        <p class="arc-label">Interaction arc</p>
+        <div class="arc-steps" aria-label="Approach, react, return, observe">
+          <div class="arc-step">
+            <span class="arc-icon" aria-hidden="true">
+              <svg viewBox="0 0 256 256" fill="currentColor">
+                <path d="M152,80a32,32,0,1,0-32-32A32,32,0,0,0,152,80Zm0-48a16,16,0,1,1-16,16A16,16,0,0,1,152,32Zm64,112a8,8,0,0,1-8,8c-35.31,0-52.95-17.81-67.12-32.12-2.74-2.77-5.36-5.4-8-7.84l-13.43,30.88,37.2,26.57A8,8,0,0,1,160,176v56a8,8,0,0,1-16,0V180.12l-31.07-22.2L79.34,235.19A8,8,0,0,1,72,240a7.84,7.84,0,0,1-3.19-.67,8,8,0,0,1-4.15-10.52l54.08-124.37c-9.31-1.65-20.92,1.2-34.7,8.58a163.88,163.88,0,0,0-30.57,21.77,8,8,0,0,1-10.95-11.66c2.5-2.35,61.69-57.23,98.72-25.08,3.83,3.32,7.48,7,11,10.57C166.19,122.7,179.36,136,208,136A8,8,0,0,1,216,144Z" />
+              </svg>
+            </span>
+            <strong>Approach</strong>
+          </div>
+          <div class="arc-step">
+            <span class="arc-icon" aria-hidden="true">
+              <svg viewBox="0 0 256 256" fill="currentColor">
+                <path d="M183.89,153.34a57.6,57.6,0,0,1-46.56,46.55A8.75,8.75,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68ZM216,144a88,88,0,0,1-176,0c0-27.92,11-56.47,32.66-84.85a8,8,0,0,1,11.93-.89l24.12,23.41,22-60.41a8,8,0,0,1,12.63-3.41C165.21,36,216,84.55,216,144Zm-16,0c0-46.09-35.79-85.92-58.21-106.33L119.52,98.74a8,8,0,0,1-13.09,3L80.06,76.16C64.09,99.21,56,122,56,144a72,72,0,0,0,144,0Z" />
+              </svg>
+            </span>
+            <strong>React</strong>
+          </div>
+          <div class="arc-step">
+            <span class="arc-icon" aria-hidden="true">
+              <svg viewBox="0 0 256 256" fill="currentColor">
+                <path d="M232,144a64.07,64.07,0,0,1-64,64H80a8,8,0,0,1,0-16h88a48,48,0,0,0,0-96H51.31l34.35,34.34a8,8,0,0,1-11.32,11.32l-48-48a8,8,0,0,1,0-11.32l48-48A8,8,0,0,1,85.66,45.66L51.31,80H168A64.07,64.07,0,0,1,232,144Z" />
+              </svg>
+            </span>
+            <strong>Return</strong>
+          </div>
+          <div class="arc-step">
+            <span class="arc-icon" aria-hidden="true">
+              <svg viewBox="0 0 256 256" fill="currentColor">
+                <path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z" />
+              </svg>
+            </span>
+            <strong>Observe</strong>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </body>
+</html>

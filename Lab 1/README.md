@@ -110,7 +110,36 @@ don't need to be beautiful, but they must capture and communicate not only the b
 and the people around it. If you're new to storyboarding, read
 [this explanation](https://www.nngroup.com/articles/storyboards-visualize-ideas/).
 
-**Include pictures of your storyboards here.**
+### Storyboard Iteration 1
+
+[View the formatted four-panel storyboard](storyboard.html)
+
+[View the rendered storyboard poster](storyboard-render.png)
+
+- [Scene 1 — Drawn to the glow](assets/storyboard/scene-1-approach.png)
+- [Scene 2 — The fire answers](assets/storyboard/scene-2-flare.png)
+- [Scene 3 — Trust is tested](assets/storyboard/scene-3-return.png)
+- [Scene 4 — Night reaches its end](assets/storyboard/scene-4-dawn.png)
+
+### Storyboard Iteration 2
+
+[View the formatted non-sequential storyboard](storyboard-iteration-2.html)
+
+[![Storyboard Iteration 2 — high-resolution comic layout](storyboard-iteration-2-render.png)](storyboard-iteration-2-render.png)
+
+_Click the storyboard to open the full 2400 × 3600 image._
+
+Acting out the first version revealed that the opening approach and the final
+observation were both too static and visually repetitive. This iteration replaces
+the opening with a detailed ignition sequence: reaching for the matchbox, striking
+the match, and transferring the flame to the kindling.
+
+It also introduces a non-sequential branch based on how fuel is added. Throwing a
+log makes the flame jump briefly, then produces a vivid orange-red flare after a
+two-second delay and drives the person away. Placing the log slowly produces a
+stable flame and allows the person to remain nearby.
+
+Iteration 3 will follow feedback from the next acted interaction test.
 
 Use the storyboards to decide what interaction to prototype.
 
