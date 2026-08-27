@@ -214,9 +214,9 @@ secretly controls the phone's light response. We used it to test whether the
 fire's timing and changes in brightness were legible before refining the final
 video sketch.
 
-[![Play the first wizarded interaction attempt](assets/video-first-attempt-preview.jpg)](assets/video.mp4)
+https://github.com/user-attachments/assets/0c177aa3-7cba-4f61-a134-9292f47f5efa
 
-_[Watch or download the MP4 directly](assets/video.mp4) · 38 seconds_
+_[Download the MP4 directly](assets/video.mp4) · 38 seconds_
 
 ## Part E. (optional) Costume the Device
 
