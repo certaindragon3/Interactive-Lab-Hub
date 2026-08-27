@@ -2,9 +2,11 @@
 
 _This project is to be done in teams of 2._
 
-**NAME OF BOTH COLLABORATOR(S) HERE**
+**NAME OF BOTH COLLABORATOR(S) HERE: Terence Zhang; Jiesen Huang**
 
-**THE MASTERWORK YOU DREW FROM THE HAT:**
+**THE MASTERWORK YOU DREW FROM THE HAT: The Campfire — Prehistory**
+
+*The original interactive light: gather round, tend it, and watch.*
 
 ---
 
@@ -92,6 +94,19 @@ the interaction*:
 **Describe your masterwork here, in your own words. What is the core interaction
 someone would recognize it by?**
 
+The campfire is an interactive light from prehistory, with no single known
+creator. Its interaction is simple and immediately recognizable: people gather
+around it, tend it with fuel, react to its changes, and watch it gradually die
+down. A person can approach, add wood, or stop tending the fire; in response,
+the light can brighten, flicker, flare, stabilize, or fade.
+
+What makes the campfire interactive is that its behavior affects the people
+around it. A weak fire draws someone closer to tend it, while a sudden flare can
+push that person away. Its strength is this direct, legible feedback between
+human action and changing light. Its weakness is that the response is not fully
+predictable: the same act of adding fuel can produce warmth and stability or a
+dangerous burst.
+
 ## Part A. Plan
 
 For your masterwork, reconstruct the interaction as a scene:
@@ -105,45 +120,36 @@ For your masterwork, reconstruct the interaction as a scene:
 
 **Describe your setting, players, activity, and goals here.**
 
+- **Setting:** At night in a remote prehistoric landscape, a group gathers
+  around a campfire.
+- **Players:** One person actively tends the fire while the other group members
+  remain nearby. The campfire itself functions as the responsive light in the
+  interaction.
+- **Activity:** The fire is small and close to going out, so the active player
+  approaches and adds wood. The fire becomes brighter and louder, briefly
+  flaring strongly enough to make the player step away. Once it settles, the
+  player cautiously returns and sits nearby. Without more fuel, the fire
+  eventually fades.
+- **Goals:** The active player wants to start and maintain a useful campfire
+  without being burned. The nearby group wants a stable source of light and
+  warmth. The staged fire should respond clearly enough that viewers can read
+  the relationship between tending, danger, and comfort.
+
 Now **sketch a 3 storyboards** of the interaction you are recreating. (The number may depend on the thing you drew, but stretch your thinking!) They
 don't need to be beautiful, but they must capture and communicate not only the behavior of the light, but how it affects
 and the people around it. If you're new to storyboarding, read
 [this explanation](https://www.nngroup.com/articles/storyboards-visualize-ideas/).
 
-### Storyboard Iteration 1
-
-[View the formatted four-panel storyboard](storyboard.html)
-
-[View the rendered storyboard poster](storyboard-render.png)
-
-- [Scene 1 — Drawn to the glow](assets/storyboard/scene-1-approach.png)
-- [Scene 2 — The fire answers](assets/storyboard/scene-2-flare.png)
-- [Scene 3 — Trust is tested](assets/storyboard/scene-3-return.png)
-- [Scene 4 — Night reaches its end](assets/storyboard/scene-4-dawn.png)
-
-### Storyboard Iteration 2
-
-[View the formatted non-sequential storyboard](storyboard-iteration-2.html)
-
-[![Storyboard Iteration 2 — high-resolution comic layout](storyboard-iteration-2-render.png)](storyboard-iteration-2-render.png)
-
-_Click the storyboard to open the full 2400 × 3600 image._
-
-Acting out the first version revealed that the opening approach and the final
-observation were both too static and visually repetitive. This iteration replaces
-the opening with a detailed ignition sequence: reaching for the matchbox, striking
-the match, and transferring the flame to the kindling.
-
-It also introduces a non-sequential branch based on how fuel is added. Throwing a
-log makes the flame jump briefly, then produces a vivid orange-red flare after a
-two-second delay and drives the person away. Placing the log slowly produces a
-stable flame and allows the person to remain nearby.
-
-Iteration 3 will follow feedback from the next acted interaction test.
+![Storyboard iteration 1: approaching, tending, retreating from, and returning to the campfire](storyboard-render.png)
 
 Use the storyboards to decide what interaction to prototype.
 
 **Summarize the feedback you got here.**
+
+Our first acted run revealed that the opening and ending felt too similar: both
+showed a person observing a relatively static fire. The opening needed a clearer
+human action and a more immediate response from the light. The detailed feedback
+and resulting iteration are documented in Part B.
 
 ## Part B. Act out the Interaction
 
@@ -153,10 +159,28 @@ it aloud.
 
 **Are there things that seemed better on paper than when acted out?**
 
+The first stage seemed too quiet and redundant when acted out. Simply having the
+person approach a weak fire did not create enough action or interaction, and it
+looked too similar to the final moment of quietly watching the fire.
+
 **Did new ideas about the piece surface once you were on your feet?**
+
+We changed the opening so the player now starts the fire from scratch: they reach
+for a matchbox, strike a match, and use it to light the kindling. This creates a
+clear input from the player and an immediate change in the light. We also refined
+the fuel-adding moment: the player throws a log into the fire, the flame jumps
+briefly, and then—after a two-second delay—bursts into a vivid orange-red flare.
 
 **Are there key moments in the interaction where things could go in a different direction?**
 Iterate your storyboards to capture key non-sequential aspects of the interaction. 
+
+The key branch occurs when the player adds a log. In the performed scenario, the
+player throws it in; the fire hops and then flares, driving the player away. In
+the alternative scenario, the player places the log carefully; the fire remains
+stable, so the player can stay nearby. Both paths eventually lead to the ending,
+when the fire slowly dies down as night ends.
+
+![Storyboard iteration 2: detailed ignition sequence and branching fuel interaction](storyboard-iteration-2-render.png)
 
 ## Part C. Prototype the Light (light first!)
 
