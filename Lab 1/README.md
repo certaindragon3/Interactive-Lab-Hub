@@ -140,10 +140,7 @@ don't need to be beautiful, but they must capture and communicate not only the b
 and the people around it. If you're new to storyboarding, read
 [this explanation](https://www.nngroup.com/articles/storyboards-visualize-ideas/).
 
-<img
-  src="storyboard-render.png"
-  alt="Storyboard iteration 1: approach the glow, retreat from the flare, return as it settles, and watch until dawn"
->
+![Storyboard iteration 1: approach the glow, retreat from the flare, return as it settles, and watch until dawn](./storyboard-render.png)
 
 Use the storyboards to decide what interaction to prototype.
 
@@ -199,10 +196,7 @@ smaller and finally goes out. The sustained pose gives the fading light a visibl
 human counterpart and turns the final
 extinguishing sequence into an emotional beat rather than another static shot.
 
-<img
-  src="storyboard-iteration-3-render.png"
-  alt="Storyboard iteration 3: the final performed sequence from lighting the fire through making a wish as it fades"
->
+![Storyboard iteration 3: the final performed sequence from lighting the fire through making a wish as it fades](./storyboard-iteration-3-render.png)
 
 ## Part C. Prototype the Light (light first!)
 
