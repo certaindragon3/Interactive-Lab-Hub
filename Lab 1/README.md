@@ -140,7 +140,10 @@ don't need to be beautiful, but they must capture and communicate not only the b
 and the people around it. If you're new to storyboarding, read
 [this explanation](https://www.nngroup.com/articles/storyboards-visualize-ideas/).
 
-![Storyboard iteration 1: approaching, tending, retreating from, and returning to the campfire](storyboard-render.png)
+<img
+  src="storyboard-render.png"
+  alt="Storyboard iteration 1: approach the glow, retreat from the flare, return as it settles, and watch until dawn"
+>
 
 Use the storyboards to decide what interaction to prototype.
 
@@ -181,6 +184,25 @@ stable, so the player can stay nearby. Both paths eventually lead to the ending,
 when the fire slowly dies down as night ends.
 
 ![Storyboard iteration 2: detailed ignition sequence and branching fuel interaction](storyboard-iteration-2-render.png)
+
+### Storyboard Iteration 3: Choreographing the Fade
+
+During the final recording, a third iteration emerged. I had originally imagined
+the ending as a group gathered around the fire and singing, but I performed this
+take alone, so that scene was not practical to stage. More importantly, a group
+tableau would not solve the earlier problem of the ending feeling too passive.
+
+I replaced it with one clear solo action. After retreating from the flare, the
+performer waits for the fire to stabilize, approaches slowly, sits down, presses
+both hands together, closes their eyes, and holds a wish while the flame becomes
+smaller and finally goes out. The sustained pose gives the fading light a visible
+human counterpart and turns the final
+extinguishing sequence into an emotional beat rather than another static shot.
+
+<img
+  src="storyboard-iteration-3-render.png"
+  alt="Storyboard iteration 3: the final performed sequence from lighting the fire through making a wish as it fades"
+>
 
 ## Part C. Prototype the Light (light first!)
 
@@ -237,6 +259,19 @@ and calm for a bedroom?
 **Record your prototyped interaction as a video sketch.** Aim for the bar from
 the top of this lab: a viewer who knows the piece should recognize it; a viewer
 who doesn't should come away understanding what it's famous for. How might you illustrate the non-sequential aspects of the interaction in the sketch?
+
+The final video follows the performed branch from iteration 2: throwing the log
+causes a small warning hop, followed by a delayed flare that drives the performer
+back. The careful log-placement alternative remains documented in the second
+storyboard rather than being forced into one linear recording.
+
+Because I performed the final take alone, I did not attempt the earlier idea of
+several people gathering and singing around the campfire. Instead, I slowly
+approach the settled fire, sit down, bring my hands together, close my eyes, and
+make a wish.
+I hold that pose as the light dims from flame to embers and finally disappears.
+This gives the last scene both physical movement and a readable relationship
+between the performer and the changing light.
 
 **Include your video here.**
 
