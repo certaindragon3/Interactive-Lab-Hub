@@ -5,3 +5,8 @@ venv*
 __*
 .venv*
 .venv/
+
+# Lab 1 local prototyping tools and generated storyboard source
+/Lab 1/tinkerbelle/
+/Lab 1/tinkerbelle-campfire/
+/Lab 1/storyboard*.html
