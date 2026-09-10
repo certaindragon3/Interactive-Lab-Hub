@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orange — Laundry Storyboard</title>
+  <style>
+    :root { --paper:#f7f3ea; --ink:#292b2d; --muted:#74797b; --line:#c8c7c1; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#deddd8; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    .tools { max-width:1280px; margin:auto; padding:14px 48px; display:flex; justify-content:flex-end; }
+    .tools a { color:#616769; font-size:12px; text-underline-offset:3px; }
+    .tools a:focus-visible { outline:2px solid #367e78; outline-offset:4px; }
+    .page { width:1280px; max-width:100%; margin:auto; padding:46px 48px 50px; background:var(--paper); }
+    h1 { margin:0 0 35px; font:700 32px/1 Georgia,"Times New Roman",serif; letter-spacing:-.025em; }
+    .route + .route { margin-top:50px; }
+    h2 { display:flex; align-items:center; gap:14px; margin:0 0 18px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+    h2::after { content:""; flex:1; height:1px; background:var(--line); }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:29px 18px; }
+    figure { margin:0; min-width:0; }
+    .frame { position:relative; width:100%; aspect-ratio:4/3; background:var(--paper); border:1px solid var(--line); overflow:hidden; }
+    img { width:100%; height:100%; display:block; object-fit:contain; }
+    .number { position:absolute; top:10px; left:10px; width:28px; height:28px; display:grid; place-items:center; border-radius:50%; background:#73797c; color:#faf8f2; font-size:10px; font-weight:700; }
+    figcaption { padding-top:8px; }
+    figcaption strong { display:block; font:700 18px/1.15 Georgia,"Times New Roman",serif; }
+    figcaption span { display:block; margin-top:4px; color:var(--muted); font-size:10px; line-height:1.4; letter-spacing:.06em; text-transform:uppercase; }
+    .done figcaption strong { color:#ad5e3c; }
+    .rhythm { display:flex; justify-content:space-between; align-items:center; gap:40px; border-top:1px solid var(--line); margin-top:38px; padding-top:20px; }
+    .rhythm p { margin:0; display:flex; gap:28px; color:var(--muted); font-size:10px; letter-spacing:.06em; text-transform:uppercase; line-height:1.6; }
+    .rhythm p span { display:block; }
+    .rhythm b { display:block; font-weight:700; }
+    .wave { display:flex; align-items:center; gap:18px; color:var(--muted); }
+    .wave-label { font:italic 13px Georgia,"Times New Roman",serif; white-space:nowrap; }
+    .wave svg { width:260px; height:60px; overflow:visible; }
+    .wave path,.wave line { stroke:#8b908f; stroke-width:1.2; fill:none; }
+    .wave text { fill:var(--muted); font:9px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; letter-spacing:.02em; }
+    @media (max-width:760px) { .page { padding:28px 20px; } .tools { padding:14px 20px; } .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .rhythm { flex-direction:column; align-items:flex-start; gap:20px; } }
+    @media (max-width:460px) { .grid { grid-template-columns:1fr; } h2 { font-size:10px; letter-spacing:.1em; } .wave { flex-direction:column; align-items:flex-start; gap:8px; } .rhythm p { gap:20px; } }
+    @media print { .tools { display:none; } body { background:var(--paper); } figure { break-inside:avoid; } }
+  </style>
+</head>
+<body>
+  <nav class="tools" aria-label="Download"><a href="storyboard-orange-render.png" download>Download PNG · 2560 px</a></nav>
+  <main class="page" id="storyboard">
+    <h1>Orange.</h1>
+    <section class="route" aria-labelledby="wash-heading">
+      <h2 id="wash-heading">Wash · 38 min · Top button</h2>
+      <div class="grid">
+        <figure><div class="frame"><img src="assets/storyboard-orange/wash-01-start.png" alt="Top button pressed. The left fruit is teal; the right waits as an outline."><span class="number">01</span></div><figcaption><strong>Start washing</strong><span>0 min · Top button</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/wash-02-first-block.png" alt="The active left fruit is roughly one quarter orange."><span class="number">02</span></div><figcaption><strong>The first block ripens</strong><span>10 min · Left active</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/wash-03-handoff.png" alt="The left fruit holds half orange. The right starts breathing from half orange."><span class="number">03</span></div><figcaption><strong>Pass the rhythm</strong><span>20 min · Left holds, right starts</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/wash-04-second-block.png" alt="The right fruit ripens to roughly three quarters orange while the left stays half orange."><span class="number">04</span></div><figcaption><strong>The second block ripens</strong><span>29 min · Right active</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/wash-05-ripe.png" alt="The right fruit is fully orange. The left still holds half orange."><span class="number">05</span></div><figcaption><strong>Two blocks complete</strong><span>38 min · Half + fully ripe</span></figcaption></figure>
+        <figure class="done"><div class="frame"><img src="assets/storyboard-orange/wash-06-done.png" alt="Orange completion light around two black fruit silhouettes; bright phase shown."><span class="number">06</span></div><figcaption><strong>Ready to collect</strong><span>Done · Orange ↔ dark</span></figcaption></figure>
+      </div>
+    </section>
+    <section class="route" aria-labelledby="dry-heading">
+      <h2 id="dry-heading">Dry · 60 min · Bottom button</h2>
+      <div class="grid">
+        <figure><div class="frame"><img src="assets/storyboard-orange/dry-01-start.png" alt="Bottom button pressed. The left fruit is teal; two fruit outlines wait."><span class="number">07</span></div><figcaption><strong>Start drying</strong><span>0 min · Bottom button</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/dry-02-handoff.png" alt="The left fruit holds one third orange. The middle starts from one third orange."><span class="number">08</span></div><figcaption><strong>One third, held</strong><span>20 min · Middle starts</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/dry-03-handoff.png" alt="The middle holds two thirds orange. The right starts breathing from two thirds orange."><span class="number">09</span></div><figcaption><strong>Two thirds, held</strong><span>40 min · Right starts</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/dry-04-last-block.png" alt="The right fruit is nearly ripe. The left and middle keep their earlier colors."><span class="number">10</span></div><figcaption><strong>The last block ripens</strong><span>50 min · Right active</span></figcaption></figure>
+        <figure><div class="frame"><img src="assets/storyboard-orange/dry-05-ripe.png" alt="Three completed fruits: one third, two thirds, and fully orange."><span class="number">11</span></div><figcaption><strong>Three blocks complete</strong><span>60 min · ⅓ + ⅔ + fully ripe</span></figcaption></figure>
+        <figure class="done"><div class="frame"><img src="assets/storyboard-orange/dry-06-done.png" alt="Orange completion light around three black fruit silhouettes; bright phase shown."><span class="number">12</span></div><figcaption><strong>Ready to collect</strong><span>Done · Orange ↔ dark</span></figcaption></figure>
+      </div>
+    </section>
+    <footer class="rhythm" aria-label="Breathing rhythm">
+      <p><span><b>Active</b>Breathes</span><span><b>Completed</b>Holds</span><span><b>Waiting</b>Outline</span></p>
+      <div class="wave"><span class="wave-label">One breath</span><svg viewBox="0 0 260 60" role="img" aria-label="Brightness rises from dim at zero seconds to bright at two and a half seconds, then returns to dim at five seconds."><path d="M 10 34 C 62 34, 78 8, 130 8 S 198 34, 250 34"/><line x1="10" y1="30" x2="10" y2="39"/><line x1="130" y1="4" x2="130" y2="13"/><line x1="250" y1="30" x2="250" y2="39"/><text x="10" y="55" text-anchor="middle">0 s</text><text x="130" y="55" text-anchor="middle">2.5 s</text><text x="250" y="55" text-anchor="middle">5 s</text></svg></div>
+    </footer>
+  </main>
+</body>
+</html>

@@ -288,6 +288,58 @@ We strongly discourage literal digital or analog clock display: Be creative.
 
 ** Insert ideas, sketches, [Verplank diagrams](https://ccrma.stanford.edu/courses/250a-fall-2004/IDSketchbok.pdf)), storyboards for your ideas **
 
+> **Orange: a laundry timer.** My washer takes 38 minutes and my dryer takes
+> 60. Those are the two stretches of time I actually want this device to help
+> me keep track of. I named the Pi Orange, so the display will be a row of
+> pixel oranges that slowly ripen from teal to orange.
+>
+> After starting the washer, I press the top button. After starting the dryer,
+> I press the bottom button. Washing gets two fruit positions; drying gets
+> three. Time moves from left to right through the row:
+>
+> | Routine | Active block | Color change in that fruit |
+> | --- | --- | --- |
+> | Wash, 38 min | Left, 0–20 min | Teal → half orange |
+> | Wash, 38 min | Right, 20–38 min | Half orange → fully orange |
+> | Dry, 60 min | Left, 0–20 min | Teal → one-third orange |
+> | Dry, 60 min | Middle, 20–40 min | One-third → two-thirds orange |
+> | Dry, 60 min | Right, 40–60 min | Two-thirds → fully orange |
+>
+> Only the current fruit breathes: dim, bright, dim, once every five seconds.
+> Its color changes much more slowly, over the whole block. When a block ends,
+> that fruit stops breathing and keeps its color. The next one picks up from
+> the same ripeness. The storyboard uses dim outlines for blocks that haven't
+> started yet, so the active position is easier to find.
+>
+> At the end, the contrast flips. The screen flashes orange around two black
+> fruit silhouettes for washing, or three for drying. The final panels below
+> show the bright phase of that alert. The preceding panels separate out the
+> instant the last fruit ripens; they aren't an extra waiting period.
+>
+> ![Orange laundry timer storyboard: six washing frames followed by six drying frames](storyboard-orange-render.png)
+>
+> [HTML layout](storyboard-orange.html) ·
+> [Full-resolution PNG, 2560 × 3574](storyboard-orange-render.png) ·
+> [Individual-frame image prompts](assets/storyboard-orange/prompts.md)
+> ([Export instructions](tools/README.md))
+>
+> This is the Part E concept, before implementation or user testing. One
+> hardware correction to my initial idea: the current Mini PiTFT is a color
+> TFT, not an OLED. It can draw the black silhouettes, but its backlight will
+> still be on. I also need to test whether the final signal catches my
+> attention from where I actually leave the timer. A visual reminder only
+> helps if I can see it.
+>
+> My first prototype will speed the minutes up to seconds so I can check the
+> handoffs without waiting an hour. After that I want to settle how to dismiss
+> the alert and prevent an accidental button press from restarting or switching
+> a running timer. Those behaviors are still open design decisions.
+>
+> **AI contribution:** I supplied the laundry routines, timing, ripening
+> sequence, button mapping, and completion effect. Codex used Imagegen to
+> generate each of the twelve illustrations separately, taking the pencil
+> style from my Lab 1 storyboard. The numbering, captions, and page layout are
+> HTML/CSS. Codex also helped organize this write-up and export the storyboard.
 
 
 **Put the names of the people you gave feedback to here. (Even better, add links to their repos here!)**
