@@ -321,7 +321,6 @@ We strongly discourage literal digital or analog clock display: Be creative.
 > [HTML layout](storyboard-orange.html) ·
 > [Full-resolution PNG, 2560 × 3574](storyboard-orange-render.png) ·
 > [Individual-frame image prompts](assets/storyboard-orange/prompts.md)
-> ([Export instructions](tools/README.md))
 >
 > This is the Part E concept, before implementation or user testing. One
 > hardware correction to my initial idea: the current Mini PiTFT is a color
@@ -339,7 +338,7 @@ We strongly discourage literal digital or analog clock display: Be creative.
 > sequence, button mapping, and completion effect. Codex used Imagegen to
 > generate each of the twelve illustrations separately, taking the pencil
 > style from my Lab 1 storyboard. The numbering, captions, and page layout are
-> HTML/CSS. Codex also helped organize this write-up and export the storyboard.
+> HTML/CSS. 
 
 
 **Put the names of the people you gave feedback to here. (Even better, add links to their repos here!)**

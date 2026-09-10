@@ -28,3 +28,6 @@ __pycache__/
 /Lab 1/tinkerbelle/
 /Lab 1/tinkerbelle-campfire/
 /Lab 1/storyboard*.html
+
+# Hub-wide local storyboard skill
+/.agents/skills/storyboard/
