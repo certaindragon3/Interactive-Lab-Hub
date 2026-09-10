@@ -256,11 +256,6 @@ Work on `screen_clock.py`, try to show the time by filling in the while loop (at
 > Honestly, this is the boring version, a digital readout on a small screen. It
 > works, which is the point of Part D, but for Part 2 I want the clock to *do*
 > something with time rather than just print it.
->
-> **A note on tools:** I used an AI coding assistant for some of the setup grind
-> (SSH config, the venv, moving files offline) and while debugging the clock
-> code. The hardware setup, the button tests, the photos, and the judgment about
-> what's actually working are mine.
 
 ### How to Edit Scripts on Pi
 Option 1. One of the ways for you to edit scripts on Pi through terminal is using [`nano`](https://linuxize.com/post/how-to-use-nano-text-editor/) command. You can go into the `screen_clock.py` by typing the follow command line:
