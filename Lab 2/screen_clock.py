@@ -1,5 +1,4 @@
 import time
-import subprocess
 import digitalio
 import board
 from PIL import Image, ImageDraw, ImageFont
@@ -62,9 +61,17 @@ backlight.value = True
 
 while True:
     # Draw a black filled box to clear the image.
-    draw.rectangle((0, 0, width, height), outline=0, fill=400)
+    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
 
-    #TODO: Lab 2 part D work should be filled in here. You should be able to look in cli_clock.py and stats.py 
+    # Read once per frame so the time and date stay consistent at midnight.
+    now = time.localtime()
+    draw.text((10, 10), "Orange", font=font, fill=(255, 165, 0))
+    draw.text((10, 40), time.strftime("%H:%M:%S", now), font=font,
+              fill=(255, 255, 255))
+    draw.text((10, 70), time.strftime("%Y-%m-%d", now), font=font,
+              fill=(255, 255, 255))
+    draw.text((10, 100), time.strftime("%Z", now), font=font,
+              fill=(160, 160, 160))
 
     # Display image.
     disp.image(image, rotation)

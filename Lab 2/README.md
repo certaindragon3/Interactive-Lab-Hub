@@ -1,6 +1,11 @@
 # Interactive Prototyping: The Clock of Pi
 **NAMES OF COLLABORATORS HERE**
 
+> **How to read this page:** my own responses are set in blockquotes like this
+> one, to separate them from the original assignment text.
+
+---
+
 Does it feel like time is moving strangely during this semester?
 
 For our first Pi project, we will pay homage to the [timekeeping devices of old](https://en.wikipedia.org/wiki/History_of_timekeeping_devices) by making simple clocks.
@@ -66,6 +71,24 @@ pi@raspberrypi:~ $ source venv/bin/activate
 (venv) pi@raspberrypi:~ $ 
 
 ```
+> I booted the course image on my Raspberry Pi 5, connected from my Mac over
+> SSH, and renamed the Pi **Orange**. A new SSH connection confirmed that the
+> name had changed. The Mini PiTFT also showed the Pi's connection to RedRover.
+>
+> For the lab, I created a separate Python 3.11 environment inside my repository
+> at `~/Interactive-Lab-Hub/.venv`. This leaves the image's existing
+> `~/venv` available for the boot display service. After connecting with my
+> local `ssh Orange` alias, I activate the lab environment with:
+>
+> ```bash
+> cd ~/Interactive-Lab-Hub
+> source .venv/bin/activate
+> cd "Lab 2"
+> ```
+>
+> The virtual environment, Python caches, and local configuration files are
+> excluded from Git.
+
 ### Setup Personal Access Tokens on GitHub
 Set your git name and email so that commits appear under your name.
 ```
@@ -77,6 +100,12 @@ The support for password authentication of GitHub was removed on August 13, 2021
 
 Following the steps listed [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) from GitHub to set up a token. Depends on your preference, you can set up and select the scopes, or permissions, you would like to grant the token. This token will act as your GitHub password later when you use the terminal on your Pi to sync files with your lab-hub repo.
 
+
+> My checkout uses the `Fall2026` branch of
+> [my Lab Hub](https://github.com/certaindragon3/Interactive-Lab-Hub), and its Git
+> commit identity has been set to my own identity. **GitHub authentication for
+> pushing directly from Orange is still pending verification.** The successful
+> SSH connection and local tests do not establish GitHub push access.
 
 ## Part B. 
 ### Try out the Command Line Clock
@@ -109,6 +138,22 @@ Install the packages from the requirements.txt and run the example script `cli_c
 The terminal should show the time, you can press `ctrl-c` to exit the script.
 If you are unfamiliar with the Python code in `cli_clock.py`, have a look at [this Python refresher](https://hackernoon.com/intermediate-python-refresher-tutorial-project-ideas-and-tips-i28s320p). If you are still concerned, please reach out to the teaching staff!
 
+
+> I ran [cli_clock.py](cli_clock.py) in the lab environment. The timestamp
+> updated once per second on the same terminal line, confirming that the loop
+> worked during a three-second test. `strftime()` formats the system time,
+> `\r` returns to the start of the line, and `sleep(1)` sets the update interval.
+>
+> The first run showed an old date from the course image. This made one
+> limitation clear: the program can refresh correctly while displaying the
+> wrong time, because it depends on the Pi's system clock. I corrected that
+> clock before testing the display version in Part D.
+>
+> During setup, Orange could not reach GitHub or PyPI, so the repository was
+> transferred from my Mac as a Git bundle and the dependencies were installed
+> offline. All 20 versions in [requirements.txt](requirements.txt) matched,
+> `pip check` reported no broken requirements, and the hardware libraries
+> imported successfully.
 
 ## Part C. 
 ### Set up your RGB Display
@@ -159,9 +204,52 @@ You can look in `image.py` for an example of how to display an image on the scre
 \*\*\***Include a picture of your own Raspberry Pi displaying the piscreen.service with your unique MAC address. Additionally, please provide another picture showing the successful completion of the screen test.**\*\*\*
 
 
+> I completed the screen test on Orange. The boot photo below shows the
+> network information and my Pi's unique MAC address, `88:a2:9e:c8:4e:23`.
+> The IP address is the one assigned at the time of the photograph.
+>
+> <img src="assets/part-c/IP.jpg" alt="Orange's boot display showing RedRover and its unique MAC address" width="420">
+>
+> For the color test, I used blue as the selected color. With neither button
+> pressed, the screen showed green; pressing A showed white, and pressing B
+> showed blue. The visible response linked each button input to a change on
+> the display.
+>
+> | Neither button: green | Button B: blue | Button A: white |
+> | --- | --- | --- |
+> | <img src="assets/part-c/Green.jpg" alt="Mini PiTFT showing green" width="240"> | <img src="assets/part-c/Blue.jpg" alt="Mini PiTFT showing blue with button B pressed" width="240"> | <img src="assets/part-c/White.jpg" alt="Mini PiTFT in the white test state with button A pressed" width="240"> |
+>
+> The white test state looks blue-tinted in the photograph. These images record
+> the three color states; they do not document the simultaneous-button
+> backlight-off behavior. I paused `piscreen.service` for the test so the boot
+> script and test program would not compete for the display.
+
 ## Part D. 
 ### Set up the Display Clock Demo
 Work on `screen_clock.py`, try to show the time by filling in the while loop (at the bottom of the script where we noted "TODO" for you). You can use the code in `cli_clock.py` and `stats.py` to figure this out.
+
+> With Codex's help, I completed the loop in [screen_clock.py](screen_clock.py)
+> and ran it on Orange. It takes one local-time reading per frame, clears the
+> image, and draws the name, time, date, and timezone with Pillow. Sending that
+> image to the display once per second produces the clock shown below.
+>
+> <img src="assets/part-d/clock.jpg" alt="Orange showing 19:21:03, 2026-09-09, EDT on the Mini PiTFT" width="420">
+>
+> Before this test, the Pi's time was manually corrected and its timezone set
+> to `America/New_York`. The photograph shows **19:21:03 on September 9, 2026,
+> in EDT**. The transferred code matched the Mac copy, passed compilation,
+> and ran on the Pi without errors; I then confirmed the physical display
+> and took the photo. Automatic network time synchronization was enabled but
+> had not succeeded at the last check.
+>
+> This version establishes the basic display-clock behavior. The next design
+> step is to explore how the device could express time through an interaction,
+> beyond a conventional numerical readout.
+>
+> **AI assistance for Parts A–D:** Codex helped configure SSH and the Python
+> environment, transfer files and dependencies, calibrate time, implement and
+> test the clock code, and organize this report. I performed the physical
+> screen tests, confirmed the results, and took the photographs.
 
 ### How to Edit Scripts on Pi
 Option 1. One of the ways for you to edit scripts on Pi through terminal is using [`nano`](https://linuxize.com/post/how-to-use-nano-text-editor/) command. You can go into the `screen_clock.py` by typing the follow command line:
@@ -246,5 +334,3 @@ Do take advantage of having done the previous iteration to refine and simplify y
 As always, make sure you document contributions and ideas from others (and AI) explicitly in your writeup.
 
 You are permitted (but not required) to work in groups and share a turn in; you are expected to make equal contribution on any group work you do, and N people's group project should look like N times the work of a single person's lab.  Make sure the page for the group turn in is linked to your personal Interactive Lab Hub page. 
-
-

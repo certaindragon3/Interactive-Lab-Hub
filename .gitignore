@@ -6,6 +6,24 @@ __*
 .venv*
 .venv/
 
+# Python caches and local environment settings
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.env.*
+!.env.example
+
+# Local Lab 2 machine setup notes
+/Lab 2/AGENTS.md
+
+# Original Part C photos; publish JPEG copies in assets/part-c instead
+/Lab 2/IP.HEIC
+/Lab 2/Blue.HEIC
+/Lab 2/Green.HEIC
+/Lab 2/White.HEIC
+/Lab 2/clock.jpeg
+
 # Lab 1 local prototyping tools and generated storyboard source
 /Lab 1/tinkerbelle/
 /Lab 1/tinkerbelle-campfire/
