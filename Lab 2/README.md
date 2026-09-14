@@ -343,10 +343,7 @@ We strongly discourage literal digital or analog clock display: Be creative.
 
 **Put the names of the people you gave feedback to here. (Even better, add links to their repos here!)**
 
-> The lab doesn't specify where feedback should be posted, and all three repos
-> have GitHub Issues turned off. I left my feedback as a GitHub commit comment
-> on the commit where each person last updated their Lab 2 README, so they get
-> a notification and the comment stays tied to the Part E version I read.
+> I gave my feedback as GitHub commit comments on each person's Lab 2 README commit (their repos have Issues turned off); links to each comment below.
 >
 > - [umasshia](https://github.com/umasshia/Interactive-Lab-Hub/tree/Fall2026/Lab%202), Who Can I Call Clock: [my comment](https://github.com/umasshia/Interactive-Lab-Hub/commit/e78a25bb0bb4f3f517b6325014c1babbbd1a63b5#commitcomment-200406215)
 > - [aurorajxshen](https://github.com/aurorajxshen/Interactive-Lab-Hub/tree/Fall2026/Lab%202), metabolism clock: [my comment](https://github.com/aurorajxshen/Interactive-Lab-Hub/commit/86b23e3a2ccd7bc220c8c132ce0dc53089db878a#commitcomment-200406223)
