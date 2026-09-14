@@ -348,6 +348,7 @@ We strongly discourage literal digital or analog clock display: Be creative.
 > - [umasshia](https://github.com/umasshia/Interactive-Lab-Hub/tree/Fall2026/Lab%202), Who Can I Call Clock: [my comment](https://github.com/umasshia/Interactive-Lab-Hub/commit/e78a25bb0bb4f3f517b6325014c1babbbd1a63b5#commitcomment-200406215)
 > - [aurorajxshen](https://github.com/aurorajxshen/Interactive-Lab-Hub/tree/Fall2026/Lab%202), metabolism clock: [my comment](https://github.com/aurorajxshen/Interactive-Lab-Hub/commit/86b23e3a2ccd7bc220c8c132ce0dc53089db878a#commitcomment-200406223)
 > - [Flora130](https://github.com/Flora130/Interactive-Lab-Hub/tree/Fall2026/Lab%202), sleep clock: [my comment](https://github.com/Flora130/Interactive-Lab-Hub/commit/69ddda4fdad80d047e8c7e2505d55b238327d09d#commitcomment-200406229)
+> - [manrongm](https://github.com/manrongm/Interactive-Lab-Hub/tree/mm3599-lab2a/Lab%202), Time as Progress: [my comment](https://github.com/manrongm/Interactive-Lab-Hub/commit/8ae0e991cea792aa9f6dbd1f4c25c4cb65b89113#commitcomment-200408359)
 
 # Lab 2 Part 2
 
