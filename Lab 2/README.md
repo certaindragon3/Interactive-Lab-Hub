@@ -343,6 +343,10 @@ We strongly discourage literal digital or analog clock display: Be creative.
 
 **Put the names of the people you gave feedback to here. (Even better, add links to their repos here!)**
 
+- [umasshia](https://github.com/umasshia/Interactive-Lab-Hub/tree/Fall2026/Lab%202): Who Can I Call Clock
+- [aurorajxshen](https://github.com/aurorajxshen/Interactive-Lab-Hub/tree/Fall2026/Lab%202): metabolism clock
+- [Flora130](https://github.com/Flora130/Interactive-Lab-Hub/tree/Fall2026/Lab%202): sleep clock
+
 # Lab 2 Part 2
 
 ## Prep 
