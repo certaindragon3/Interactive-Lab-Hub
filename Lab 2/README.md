@@ -359,6 +359,14 @@ We strongly discourage literal digital or analog clock display: Be creative.
 2. Look at and give feedback on the Part E. for at least 3 other people in the class and get 3 people to comment on your Part E!)
 **Put the feedback for your ideas here.**
 
+> **Classmate feedback (shared with me directly):**
+>
+> I liked how you worked both the technical process and the problems you ran into during the lab. Your explanation of using a separate virtual environment was clear, and it showed that you were thinking about how to avoid breaking the Pi’s boot-screen service. I also liked the Part E idea because the laundry timer connects time to a real daily routine instead of using a normal digital clock. The orange ripening concept makes the passage of time easy to understand visually, and the two buttons give the interaction a simple purpose. The storyboard and timing breakdown also made the idea easy to follow. One thing I would still be curious about is how the user will dismiss the final alert or avoid accidentally restarting the timer.
+>
+> **[TerenceZhang29](https://github.com/TerenceZhang29/Interactive-Lab-Hub) ([commit comment](https://github.com/certaindragon3/Interactive-Lab-Hub/commit/fe704d2497fc9b2a02305ed1ede5b3185a8bf17d#commitcomment-200408418)):**
+>
+> it's a timer, not a clock — give it an "after" state. The ripening row runs 0→100% and then stops, which is a progress bar with a nicer skin. The most interesting laundry question isn't "is it done" (the machine beeps) but "how long has it been sitting there wet?" Let the fruit keep going past ripe into overripe/spotted. That turns the device back into something that displays elapsed time rather than counting down, and it's a genuinely novel unit: laundry measured in fruit decay.
+
 ## Update your Lab Hub
 
 [Update your Lab Hub](pull_updates/README.md) to get the latest content and requirements for Part 2.
