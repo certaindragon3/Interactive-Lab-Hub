@@ -359,7 +359,7 @@ We strongly discourage literal digital or analog clock display: Be creative.
 2. Look at and give feedback on the Part E. for at least 3 other people in the class and get 3 people to comment on your Part E!)
 **Put the feedback for your ideas here.**
 
-> **Classmate feedback (shared with me directly):**
+> **Mandy (shared with me directly):**
 >
 > I liked how you worked both the technical process and the problems you ran into during the lab. Your explanation of using a separate virtual environment was clear, and it showed that you were thinking about how to avoid breaking the Pi’s boot-screen service. I also liked the Part E idea because the laundry timer connects time to a real daily routine instead of using a normal digital clock. The orange ripening concept makes the passage of time easy to understand visually, and the two buttons give the interaction a simple purpose. The storyboard and timing breakdown also made the idea easy to follow. One thing I would still be curious about is how the user will dismiss the final alert or avoid accidentally restarting the timer.
 >
