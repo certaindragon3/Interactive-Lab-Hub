@@ -125,12 +125,14 @@ across completion. An HTTP test exercises start → waiting → collection → i
 using the actual server. GPIO-adapter tests use fake pins and verify mapping,
 rotation, active-low reads, and cleanup; they are **not hardware tests**.
 
-## Run on Orange later, when the Pi is available
+## Run on Orange
 
-No deployment, SD-card writes, service changes, or Pi hardware test were performed
-as part of this implementation. The card was reported to be in the Mac, so do
-not assume Orange is online. Transfer/review the code separately before these
-instructions are used on the Pi.
+The first Pi hardware session was completed on September 16, 2026, after the
+device became reachable again. It used an isolated test copy so the existing
+Pi checkout's uncommitted work stayed intact. See the
+[hardware verification record](ORANGE_V2_HARDWARE_TEST.md) for the tested source,
+observed interactions, user-confirmed visuals, and limits of the evidence.
+Check connectivity and the current files before starting a later session.
 
 The existing lab environment is `/home/pi/Interactive-Lab-Hub/.venv` (Python 3.11).
 The course image's `/home/pi/venv` runs the boot display; preserve it. If the lab
@@ -150,8 +152,9 @@ The adapter matches `screen_clock.py` and the button definitions in
 | SPI | `board.SPI()` | Existing SPI0 wiring, 64 MHz as in the clock example |
 | ST7789 | 135 × 240 | offsets 53/40; frame 240 × 135, rotation 90° |
 
-Verify the physical wiring before use. The reported clock hardware run supports
-these display settings as a reference, but does not verify this application.
+These display settings were checked against the device's clock and boot-display
+scripts and exercised by Orange v2 during the recorded hardware session.
+Verify the physical wiring again if the hardware setup changes.
 Confirm that logical A is physically upper and B lower in the installed landscape
 orientation. If they are reversed, use `--swap-buttons`; do not guess or rewire.
 
@@ -186,7 +189,7 @@ processes must not drive the display at once. If the boot screen fails to return
 inspect `sudo journalctl -u piscreen.service -n 30 --no-pager`. No boot-service
 installation or automatic launch is included.
 
-## Validation boundary and next physical check
+## Validation status and remaining checks
 
 Local verification on September 16, 2026: all **38 tests passed** in an isolated
 Mac environment using **Python 3.11.11 + Pillow 11.3.0** (matching the Pi's Python
@@ -196,18 +199,20 @@ screen and keyboard activation were checked. Render tests explicitly distinguish
 orange/teal areas from a uniformly blended color. These are Mac results, not
 Raspberry Pi hardware results.
 
-Local results establish the state/gesture rules and rendered pixels, not actual
-GPIO behavior, TFT color/contrast, visibility at laundry distance, real button
-bounce, or animation performance on the Pi. Check the following on Orange:
+Subsequently, the Pi's Python 3.11.2 / Pillow 11.3.0 environment passed the same
+38 tests and compilation. A five-minute run of the actual application at 60×
+verified physical button input, cancellation, wash/dry completion, collection,
+and the tested accidental-input cases. Jiesen confirmed that the orange/teal
+regions, breathing, and brown spots displayed normally. The timer stopped and
+the boot-display service was independently verified active/running afterward.
+The [hardware record](ORANGE_V2_HARDWARE_TEST.md) separates logged observations
+from that user confirmation.
 
-1. Verify wiring and upper/lower mapping with the existing physical orientation.
-2. Try short, early-release, two-second, wrong-button, and simultaneous presses.
-3. Use 60× time to observe both block handoffs, completion, growing spots, and
-   wash collection followed by a separate dry start.
-4. Check the dim outlines, breathing, brown spots, and bottom hold line at the
-   intended viewing distance; confirm no display tearing or unintended flicker.
-5. Exit and verify that the boot display returns after restarting its service.
+Remaining checks are full-duration 38/60-minute operation, visibility at the
+intended laundry placement distance, and physical reproduction of edge cases
+currently covered only by automated tests (including presses crossing the exact
+completion boundary). No course demonstration video is included in this record.
 
 The implementation and tests were authored with Codex assistance from Jiesen's
-confirmed interaction design. Local test results must not be reported as Pi
-testing or a completed course demonstration video.
+confirmed interaction design. Report desktop, automated Pi, physical interaction,
+and user visual observations separately; none substitutes for a demonstration video.

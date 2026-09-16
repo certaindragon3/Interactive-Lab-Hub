@@ -1,0 +1,44 @@
+Hardware test starts; press A briefly to begin washing. Automatic stop after five minutes.
+Orange v2: speed 60x. Ctrl+C to exit.
+ 38.90s BUTTONS A
+ 39.08s BUTTONS released
+ 39.15s STATE running action=start_wash round=1
+ 49.80s BUTTONS A
+ 51.85s STATE idle action=cancel round=1
+ 52.16s BUTTONS released
+ 52.66s BUTTONS B
+ 52.78s BUTTONS released
+ 52.84s STATE running action=start_dry round=2
+ 57.44s BUTTONS B
+ 59.49s STATE idle action=cancel round=2
+ 59.80s BUTTONS released
+ 78.46s BUTTONS A
+ 78.65s BUTTONS released
+ 78.71s STATE running action=start_wash round=3
+116.73s STATE waiting action=time_boundary round=3
+125.65s BUTTONS A
+125.78s BUTTONS released
+125.84s STATE fading action=collect round=3
+126.49s STATE idle action=time_boundary round=3
+147.35s BUTTONS A
+147.47s BUTTONS released
+147.54s STATE running action=start_wash round=4
+148.62s BUTTONS A
+148.75s BUTTONS released
+149.58s BUTTONS B
+149.71s BUTTONS released
+151.49s BUTTONS A
+151.56s BUTTONS A+B
+151.68s BUTTONS B
+151.75s BUTTONS released
+185.58s STATE waiting action=time_boundary round=4
+199.03s BUTTONS A
+199.22s BUTTONS released
+199.29s STATE fading action=collect round=4
+199.93s STATE idle action=time_boundary round=4
+201.74s BUTTONS B
+201.93s BUTTONS released
+201.99s STATE running action=start_dry round=5
+262.05s STATE waiting action=time_boundary round=5
+
+Orange v2 stopped. Hardware users: restore piscreen.service.
