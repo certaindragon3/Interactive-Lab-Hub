@@ -31,3 +31,7 @@ __pycache__/
 
 # Hub-wide local storyboard skill
 /.agents/skills/storyboard/
+
+# Hub-local GitHub video workflow and original recording
+/.agents/skills/github-readme-video/
+/Lab 2/video.MOV

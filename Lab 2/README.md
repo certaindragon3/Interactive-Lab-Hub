@@ -1,6 +1,11 @@
 # Interactive Prototyping: The Clock of Pi
 **NAMES OF COLLABORATORS HERE**
 
+> **Jiesen Huang.** I designed and operated Orange and recorded the device
+> demonstration. Mandy, Terence, and Wenqing Pan contributed design feedback,
+> credited in Part 2. Codex assisted with code, testing, storyboard production,
+> video preparation, and this writeup; those contributions are described below.
+
 > **How to read this page:** my own responses are set in blockquotes like this
 > one, to separate them from the original assignment text.
 
@@ -371,9 +376,12 @@ We strongly discourage literal digital or analog clock display: Be creative.
 >
 > Most of their feedback was about how the timer gets stopped: how do I dismiss the
 > final alert, and what stops a stray button press from restarting or switching a
-> running timer? That is the same open question Mandy raised. My current plan is to
-> stop a running timer by pressing both buttons at once, since neither single
-> button is free — A starts the wash and B starts the dry.
+> running timer? That is the same open question Mandy raised.
+>
+> **My response at that stage:** I proposed pressing both buttons at once to
+> stop a running timer, since A starts the wash and B starts the dry. The
+> revised design below replaces my proposal with a hold on the initiating
+> button; the two-button proposal was my idea, not Wenqing's feedback.
 
 ## Update your Lab Hub
 
@@ -385,9 +393,18 @@ Start small, pick just one element of your overall idea, just to show you have a
 
 \*\*\***Put a copy of your code in your Lab 2 Github repo.**\*\*\*
 
+> My first modification was [screen_clock.py](screen_clock.py), described and
+> photographed in Part D: it draws Orange's name, local time, date, and time
+> zone on the TFT. That established the display loop before I replaced the
+> numeric clock with the fruit-based timer in [orange_timer.py](orange_timer.py).
+
 ## Make a short video of your modified barebones PiClock
 
 \*\*\***Take a video of your barely modified PiClock.**\*\*\*
+
+> Part D contains a photograph of the initial clock. I did not record a
+> separate video of that version; the [device demonstration below](#orange-v2-device-demonstration)
+> records the developed laundry timer and its button interactions.
 
 After you edit and work on the scripts for Lab 2, the files should be upload back to your own GitHub repo! You can push to your personal github repo by adding the files here, commiting and pushing.
 
@@ -409,18 +426,18 @@ Do take advantage of having done the previous iteration to refine and simplify y
 >
 > The feedback changed two parts of my design. Mandy and Wenqing both asked
 > how to end a round without accidentally restarting it. Instead of my earlier
-> two-button stop proposal, I will use the button that started the round:
-> A for washing, B for drying. A short press while the timer is running will
-> leave it alone. Holding that same button for two seconds will cancel the
-> timer. A thin line will fill during the hold; letting go early will remove
-> the line and keep the original timer going. This cancels Orange's timer,
+> two-button stop proposal, I now use the button that started the round:
+> A for washing, B for drying. A short press while the timer is running
+> leaves it alone. Holding that same button for two seconds cancels the
+> timer. A thin line fills during the hold; letting go early removes
+> the line and keeps the original timer going. This cancels Orange's timer,
 > not the washing machine or dryer.
 >
-> Terence's suggestion gave the end of the round a more useful meaning. I will
-> replace the repeating orange/black alert with a waiting state. When the
+> Terence's suggestion gave the end of the round a more useful meaning. I
+> replaced the repeating orange/black alert with a waiting state. When the
 > preset time is up, breathing stops. The last orange stays ripe and gradually
 > develops brown spots as the clothes wait to be collected. The earlier fruit
-> keep their completed colors. After taking out the clothes, I will tap the
+> keep their completed colors. After taking out the clothes, I tap the
 > same button to confirm collection; the fruit briefly fade and the device
 > returns to idle. There is no separate alert to dismiss.
 >
@@ -468,8 +485,11 @@ Do take advantage of having done the previous iteration to refine and simplify y
 > The revised behavior is implemented in [orange_timer.py](orange_timer.py),
 > with separate modules for the timer, display renderer, GPIO adapter, and
 > browser simulator. [Running Orange v2](ORANGE_V2_RUN.md) includes the demo,
-> testing, and Pi startup instructions. At 60× demo speed, washing takes 38
-> real seconds and drying takes 60; the long press still takes two real seconds.
+> testing, and Pi startup instructions. The timer measures elapsed time with
+> a monotonic clock, so it does not depend on the wall-clock synchronization
+> issue encountered in Part D. The normal durations are 38 and 60 minutes.
+> I used 60× speed for the first device test and 120× for the final recording;
+> the long press takes two real seconds in both modes.
 >
 > All 38 automated checks passed in the integrated checkout with Python
 > 3.11.11 and Pillow 11.3.0. These cover timing boundaries, accidental inputs,
@@ -503,8 +523,9 @@ Do take advantage of having done the previous iteration to refine and simplify y
 >
 > This verifies the accelerated interaction on the device, not stability over
 > full 38/60-minute laundry cycles or visibility at every placement distance.
-> A device demonstration video is still needed. The timer stores its current
-> round in memory, so restarting the application starts from idle.
+> The final recording below adds visible evidence of cancellation and both
+> collection paths. The timer stores its current round in memory, so
+> restarting the application starts from idle.
 >
 > [Detailed hardware verification](ORANGE_V2_HARDWARE_TEST.md) ·
 > [Recorded button and state events](test-evidence/orange-v2-2026-09-16.log)
@@ -517,7 +538,60 @@ Do take advantage of having done the previous iteration to refine and simplify y
 
 \*\*\***Put a copy of your code in your Lab 2 Github repo.**\*\*\*
 
+> **Code:** [entry point](orange_timer.py) · [state and gesture logic](orange_v2/core.py) ·
+> [screen renderer](orange_v2/render.py) · [GPIO/display adapter](orange_v2/hardware.py) ·
+> [run instructions](ORANGE_V2_RUN.md) · [tests](tests/)
+
 \*\*\***Take a video of your PiClock.**\*\*\*
+
+### Orange v2 device demonstration
+
+https://github.com/user-attachments/assets/9c88cfad-6f2c-4451-b431-17366192fce3
+
+_[Watch or download the MP4](assets/video/orange-v2-demo-120x.mp4) · 1 minute 22 seconds · recorded September 16, 2026_
+
+> I recorded the physical Raspberry Pi, TFT, and buttons in one continuous
+> take. The sequence is **A → cancel → A → overripe → collect → B → overripe
+> → collect**. Here, “collect” is the button confirmation representing taking
+> the clothes out; the video demonstrates the device on my desk, not a load
+> of laundry being washed or moved.
+>
+> | Approximate video time | What I demonstrate |
+> | --- | --- |
+> | 0:00–0:11 | Start washing with A, then hold A for two seconds. The hold line fills and the timer returns to idle. |
+> | 0:12–0:30 | Start again with A. The two fruit positions ripen in sequence. |
+> | 0:31–0:37 | The wash finishes; breathing stops and spots appear on the last fruit. Press A to confirm collection and clear the round. |
+> | 0:38–1:08 | Press B to start drying. The three fruit positions show successive blocks of the drying cycle. |
+> | 1:09–1:22 | The dry cycle reaches its waiting state and the last fruit becomes spotted. Press B to confirm collection and return to idle. |
+>
+> **Time scale:** the application runs at **120×** speed, with no additional
+> playback speed-up. A 38-minute wash takes 19 real seconds, a 60-minute dry
+> takes 30, and each 10 minutes of waiting takes five. The two-second hold,
+> five-second breathing rhythm, and 0.6-second collection fade remain in real
+> time. The clip demonstrates the transition into overripe states; it does
+> not show every spot-density threshold for both routines.
+>
+> **What changed through making it:** the same button now has a consistent
+> relationship to one routine. During the routine, a deliberate hold cancels;
+> after it finishes, a press means “I collected it.” Terence's waiting state
+> gives the oranges a purpose after the countdown ends. I no longer need to
+> invent a separate dismiss gesture for a flashing alert.
+>
+> The tradeoff is that a quiet waiting state is easier to miss. The recording
+> shows the fruit and spots close up, with some screen reflection; it does
+> not establish that I would notice them across a room. My next evaluation
+> would place Orange where I actually leave laundry reminders and check
+> whether I recognize the waiting state without deliberately watching for it.
+> I would also check whether collection needs more protection against an
+> accidental press. These remain design questions, rather than results of
+> this demonstration.
+>
+> **Video and writing contribution:** I performed the button sequence and
+> filmed the physical device. Codex prepared an SDR H.264/AAC MP4 from the
+> original phone recording, checked sampled frames, helped embed the uploaded
+> GitHub video, and drafted the explanation from the agreed design, test
+> evidence, and recording. The original MOV is retained locally; the linked
+> MP4 preserves the sequence and duration.
 
 
 As always, make sure you document contributions and ideas from others (and AI) explicitly in your writeup.
