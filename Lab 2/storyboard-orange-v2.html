@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orange. After the wash.</title>
+  <style>
+    :root { --paper:#f7f3ea; --ink:#292b2d; --muted:#74797b; --line:#c8c7c1; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#deddd8; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    .tools { max-width:1280px; margin:auto; padding:14px 48px; display:flex; justify-content:flex-end; }
+    .tools a { color:#616769; font-size:12px; text-underline-offset:3px; }
+    .tools a:focus-visible { outline:2px solid #367e78; outline-offset:4px; }
+    .page { width:1280px; max-width:100%; margin:auto; padding:46px 48px 50px; background:var(--paper); }
+    h1 { margin:0 0 35px; font:700 32px/1 Georgia,"Times New Roman",serif; letter-spacing:-.025em; }
+    .route + .route { margin-top:50px; }
+    h2 { display:flex; align-items:center; gap:14px; margin:0 0 18px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+    h2::after { content:""; flex:1; height:1px; background:var(--line); }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:29px 18px; }
+    figure { margin:0; min-width:0; }
+    .frame { position:relative; width:100%; aspect-ratio:4/3; background:var(--paper); border:1px solid var(--line); overflow:hidden; }
+    img { width:100%; height:100%; display:block; object-fit:contain; }
+    .number { position:absolute; top:10px; left:10px; width:28px; height:28px; display:grid; place-items:center; border-radius:50%; background:#73797c; color:#faf8f2; font-size:10px; font-weight:700; }
+    figcaption { padding-top:8px; }
+    figcaption strong { display:block; font:700 18px/1.15 Georgia,"Times New Roman",serif; }
+    figcaption span { display:block; margin-top:4px; color:var(--muted); font-size:10px; line-height:1.4; letter-spacing:.06em; text-transform:uppercase; }
+    .done figcaption strong { color:#ad5e3c; }
+    .rhythm { display:flex; justify-content:space-between; align-items:center; gap:40px; border-top:1px solid var(--line); margin-top:38px; padding-top:20px; }
+    .rhythm p { margin:0; display:flex; gap:28px; color:var(--muted); font-size:10px; letter-spacing:.06em; text-transform:uppercase; line-height:1.6; }
+    .rhythm p span { display:block; }
+    .rhythm b { display:block; font-weight:700; }
+    .wave { display:flex; align-items:center; gap:18px; color:var(--muted); }
+    .wave-label { font:italic 13px Georgia,"Times New Roman",serif; white-space:nowrap; }
+    .wave svg { width:260px; height:60px; overflow:visible; }
+    .wave path,.wave line { stroke:#8b908f; stroke-width:1.2; fill:none; }
+    .wave text { fill:var(--muted); font:9px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; letter-spacing:.02em; }
+    @media (max-width:760px) { .page { padding:28px 20px; } .tools { padding:14px 20px; } .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .rhythm { flex-direction:column; align-items:flex-start; gap:20px; } }
+    @media (max-width:460px) { .grid { grid-template-columns:1fr; } h2 { font-size:10px; letter-spacing:.1em; } .wave { flex-direction:column; align-items:flex-start; gap:8px; } .rhythm p { gap:20px; } }
+    @media print { .tools { display:none; } body { background:var(--paper); } figure { break-inside:avoid; } }
+  
+    .handoff { align-self:center; margin:0 0 30px 26px; color:var(--muted); font:italic 20px/1.7 Georgia,"Times New Roman",serif; }
+    .branch-label { min-height:18px; margin:0 0 9px; color:var(--muted); font-size:10px; letter-spacing:.07em; text-transform:uppercase; }
+    .cancellation { border-top:1px solid var(--line); padding-top:28px; }
+    .cancellation figure:nth-child(2),.cancellation figure:nth-child(3) { border-top:1px dashed var(--line); padding-top:10px; }
+    .cancellation figure:first-child { padding-top:11px; }
+    @media (max-width:760px) { .rhythm p { flex-wrap:wrap; } }
+    @media (max-width:460px) { .handoff { margin:0; font-size:17px; } }
+  </style>
+</head>
+<body>
+  <nav class="tools" aria-label="Download"><a href="storyboard-orange-v2-render.png" download>Download PNG</a></nav>
+  <main class="page" id="storyboard">
+    <h1>Orange. After the wash.</h1>
+<section class="route"><h2>Wash · 38 minutes · Upper button A</h2><div class="grid"><figure class="">
+      
+      <div class="frame"><img src="assets/storyboard-orange-v2/01-start-wash.png" alt="A person has just started a front-loading washing machine. Foreground right: enlarged Orange device with a hand briefly tapping UPPER button; black screen shows exactly TWO fruit positions: LEFT solid teal pixel orange, RIGHT dim teal fruit outline. Background left: modest pencil sketch of washer with closed round door. Device is the clear focal point. Small pencil vibration strokes around LEFT fruit only indicate its breathing; no other screen elements."><span class="number">01</span></div>
+      <figcaption><strong>Start washing</strong><span>0 min · Short press A</span></figcaption>
+    </figure><figure class="">
+      
+      <div class="frame"><img src="assets/storyboard-orange-v2/02-ripening.png" alt="Close view of Orange device alone, same front three-quarter view. Exactly TWO fruits. LEFT active fruit has leftmost QUARTER orange and remaining THREE QUARTERS teal; a few tiny curved graphite breathing strokes beside this fruit only. RIGHT fruit remains a dim teal outline. No hands."><span class="number">02</span></div>
+      <figcaption><strong>Watch it ripen</strong><span>10 min · Left fruit breathes</span></figcaption>
+    </figure><figure class="">
+      
+      <div class="frame"><img src="assets/storyboard-orange-v2/03-short-press.png" alt="Same close Orange device, a fingertip briefly tapping UPPER button. Exactly TWO fruits: LEFT half orange on left and half teal on right, stable. RIGHT three quarters orange and one quarter teal, with tiny breathing strokes around RIGHT fruit only. The progress is clearly well underway and is not reset. No fill line."><span class="number">03</span></div>
+      <figcaption><strong>A tap changes nothing</strong><span>Running · No restart</span></figcaption>
+    </figure><figure class="done">
+      
+      <div class="frame"><img src="assets/storyboard-orange-v2/04-ready.png" alt="Same close Orange device alone. Exactly TWO fruits: LEFT half orange left and half teal right; RIGHT fully orange with small teal leaf. Both hold still: NO motion strokes, no flash, no glow, no inverted orange background. Black screen."><span class="number">04</span></div>
+      <figcaption><strong>Ready to collect</strong><span>38 min · Breathing stops</span></figcaption>
+    </figure><figure class="done">
+      
+      <div class="frame"><img src="assets/storyboard-orange-v2/05-overripe.png" alt="Same close Orange device alone. Exactly TWO fruits: LEFT half orange left and half teal right, without spots. RIGHT fully orange with small teal leaf, now has several distinct DARK BROWN pixel spots distributed across its orange flesh. Keep fruit silhouette intact and orange visible; not black or rotten mess. Both static on black screen. No hands, motion strokes or alert effect."><span class="number">05</span></div>
+      <figcaption><strong>Time keeps showing</strong><span>20 min after ready · Last fruit spots</span></figcaption>
+    </figure><figure class="done">
+      
+      <div class="frame"><img src="assets/storyboard-orange-v2/06-collect.png" alt="A single continuous scene: open front-loading washer in light pencil background on left with laundry basket containing collected clothes in front of it; foreground right enlarged Orange device and hand briefly tapping UPPER button. Screen shows exactly TWO extremely faint fading fruit silhouettes, left half teal/orange and right faint orange with faint brown spots, representing acknowledgement fading to idle. Show clothes already in basket, not still inside machine. No split panels or arrows."><span class="number">06</span></div>
+      <figcaption><strong>Collect, then confirm</strong><span>Clothes out · Short press A</span></figcaption>
+    </figure></div></section>
+<section class="route"><h2>Next routine · Dry · 60 minutes · Lower button B</h2><div class="grid next"><figure class="">
+      
+      <div class="frame"><img src="assets/storyboard-orange-v2/07-start-dry.png" alt="A person has started a front-loading dryer, sketched simply in background left with closed door and basket nearby. Foreground right same enlarged Orange device, hand briefly taps LOWER button. Screen shows exactly THREE fruit positions: LEFT solid teal pixel orange breathing indicated by a few small pencil curves; MIDDLE and RIGHT dim teal fruit outlines. No spots."><span class="number">07</span></div>
+      <figcaption><strong>Start the next round</strong><span>Dryer running · Short press B</span></figcaption>
+    </figure><p class="handoff">Collect the wash.<br>Start the dryer.<br>Then begin a new round.</p></div></section>
+<section class="route cancellation"><h2>Optional branch · Cancel a running timer</h2><div class="grid"><figure class="">
+      <p class="branch-label">Hold the initiating button</p>
+      <div class="frame"><img src="assets/storyboard-orange-v2/08-hold.png" alt="Same close Orange device, finger presses and holds UPPER button. Exactly TWO fruits: LEFT half orange half teal, RIGHT three quarters orange one quarter teal. Thin horizontal track near BOTTOM of black screen, below fruit: left half filled softly in ivory, right half a dim gray line, showing approximately one second of a two-second hold. Tiny breathing strokes around RIGHT fruit. No text."><span class="number">08</span></div>
+      <figcaption><strong>Hold to cancel</strong><span>Running · Hold the initiating key</span></figcaption>
+    </figure><figure class="">
+      <p class="branch-label">Either · Release before 2 s</p>
+      <div class="frame"><img src="assets/storyboard-orange-v2/09-release.png" alt="Same close Orange device, finger visibly lifted just above UPPER button without touching it. Exactly TWO fruits: LEFT half orange half teal, RIGHT three quarters orange one quarter teal with tiny breathing strokes. NO line or progress bar at bottom: hold cancelled but original timer keeps running."><span class="number">09</span></div>
+      <figcaption><strong>Release early</strong><span>Before 2 s · Timer continues</span></figcaption>
+    </figure><figure class="">
+      <p class="branch-label">Or · Keep holding to 2 s</p>
+      <div class="frame"><img src="assets/storyboard-orange-v2/10-cancel.png" alt="Same close Orange device, finger still holding UPPER button. Screen is an empty black idle screen after cancellation: no fruits, no bar, no flash, no text. Lower button untouched. This is the alternative outcome to early release."><span class="number">10</span></div>
+      <figcaption><strong>Hold through</strong><span>At 2 s · Timer cancelled</span></figcaption>
+    </figure></div></section>
+<footer class="rhythm"><p><span><b>Running</b>Active fruit breathes</span><span><b>Ready</b>Breathing stops</span><span><b>Waiting</b>Last fruit gains spots</span></p><div class="wave"><span class="wave-label">One breath</span><svg viewBox="0 0 260 60" role="img" aria-label="A five-second dim, bright, dim breathing cycle"><path d="M 10 34 C 62 34,78 8,130 8 S 198 34,250 34"/><text x="10" y="55" text-anchor="middle">0 s</text><text x="130" y="55" text-anchor="middle">2.5 s</text><text x="250" y="55" text-anchor="middle">5 s</text></svg></div></footer>
+  </main>
+</body>
+</html>

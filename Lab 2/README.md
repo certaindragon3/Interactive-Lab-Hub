@@ -405,6 +405,64 @@ Do take advantage of having done the previous iteration to refine and simplify y
 
 ** Insert any updates ideas, sketches, [Verplank diagrams](https://ccrma.stanford.edu/courses/250a-fall-2004/IDSketchbok.pdf))!, storyboards for your ideas **
 
+> **Orange, iteration 2: time continues after the wash.**
+>
+> The feedback changed two parts of my design. Mandy and Wenqing both asked
+> how to end a round without accidentally restarting it. Instead of my earlier
+> two-button stop proposal, I will use the button that started the round:
+> A for washing, B for drying. A short press while the timer is running will
+> leave it alone. Holding that same button for two seconds will cancel the
+> timer. A thin line will fill during the hold; letting go early will remove
+> the line and keep the original timer going. This cancels Orange's timer,
+> not the washing machine or dryer.
+>
+> Terence's suggestion gave the end of the round a more useful meaning. I will
+> replace the repeating orange/black alert with a waiting state. When the
+> preset time is up, breathing stops. The last orange stays ripe and gradually
+> develops brown spots as the clothes wait to be collected. The earlier fruit
+> keep their completed colors. After taking out the clothes, I will tap the
+> same button to confirm collection; the fruit briefly fade and the device
+> returns to idle. There is no separate alert to dismiss.
+>
+> | Situation | Revised behavior |
+> | --- | --- |
+> | Idle | Short press A starts a 38-minute wash; short press B starts a 60-minute dry. |
+> | Running | Short presses do not restart or switch the round. Hold the initiating button for two seconds to cancel. |
+> | Waiting for collection | Press the initiating button to confirm the clothes have been taken out. The other button does not overwrite the round. |
+> | Moving from wash to dry | Collect the wash and confirm with A, start the dryer, then separately press B. |
+>
+> I am keeping the original two-fruit wash, three-fruit dry, and five-second
+> breathing rhythm. For the first version, the last fruit's spots become
+> sparse, more visible, and dense at 10, 20, and 30 minutes after the preset
+> finish time. After that the spots stop getting denser, but waiting time
+> continues. Those are adjustable design choices, not measurements of when
+> clothes become damaged. Orange also has no sensor for actual machine
+> completion: it uses my preset durations.
+>
+> ![Orange iteration 2: ripening, waiting with brown spots, confirming collection, and an optional two-second cancellation branch](storyboard-orange-v2-render.png)
+>
+> [Full-resolution storyboard, 2560 × 3812](storyboard-orange-v2-render.png) ·
+> [HTML source / local preview](storyboard-orange-v2.html) ·
+> [Full interaction specification](orange-v2-design.md) ·
+> [Individual-frame prompts](assets/storyboard-orange-v2/prompts.md)
+>
+> Frames 1–7 show the main routine. Frames 8–10 show cancellation separately:
+> releasing early and holding through two seconds are alternative outcomes,
+> not consecutive steps. Drying follows the same completion and collection
+> rules as washing. The original Part E storyboard above remains my first
+> iteration; this one records the revised design, not a hardware test.
+>
+> **Still to evaluate:** whether the non-flashing completion state and the
+> brown spots are noticeable on the actual TFT at its usual viewing distance,
+> whether two seconds feels right for cancellation, and whether a short
+> collection press is too easy to trigger accidentally.
+>
+> **AI contribution:** I selected the revised interaction and adopted Terence's
+> post-completion idea. Codex helped specify the button states and edge cases,
+> generated ten separate illustrations with Imagegen, corrected two frames,
+> and assembled the HTML/CSS layout and PNG. The program implementation and
+> its verification are documented separately from this design storyboard.
+
 
 \*\*\***Put a copy of your code in your Lab 2 Github repo.**\*\*\*
 
