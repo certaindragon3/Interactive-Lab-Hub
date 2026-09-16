@@ -482,11 +482,32 @@ Do take advantage of having done the previous iteration to refine and simplify y
 >
 > [Five-second breathing sample](assets/orange-v2-simulation/breathing.gif)
 >
-> **Hardware status:** the SD card was in the Mac during this work. Its mounted
-> boot partition was inspected read-only; no application was deployed to the
-> card or Pi. The new GPIO interaction, actual TFT visibility, and a device
-> demonstration video still need to be verified on Orange. The timer stores
-> its current round in memory, so restarting the application starts from idle.
+> **Hardware verification — September 16, 2026.** After the initial Mac-only
+> work, the application from commit `623c103` was copied to a separate test
+> directory on Orange; the existing Pi checkout was preserved. File hashes
+> matched the Mac source. Dependency checks, compilation, and all 38 tests
+> passed on the Pi with Python 3.11.2 and Pillow 11.3.0.
+>
+> A five-minute run at 60× speed used the real GPIO buttons and ST7789 display.
+> The event log records A/B short presses starting their routines, roughly
+> two-second holds cancelling them, and running short presses, wrong-button
+> presses, and overlapping A+B presses leaving the round unchanged. Washing
+> reached its waiting state after about 38 seconds and drying after about 60
+> seconds. A short A press after washing triggered collection and faded back
+> to idle. I also confirmed that the two-color fruit, breathing, and brown
+> spots looked normal on the device.
+>
+> The run ended at its planned 300-second timeout, and `piscreen.service` was
+> restored and independently checked as active/running. The timeout's exit
+> status 124 was expected. No boot-service definition was changed.
+>
+> This verifies the accelerated interaction on the device, not stability over
+> full 38/60-minute laundry cycles or visibility at every placement distance.
+> A device demonstration video is still needed. The timer stores its current
+> round in memory, so restarting the application starts from idle.
+>
+> [Detailed hardware verification](ORANGE_V2_HARDWARE_TEST.md) ·
+> [Recorded button and state events](test-evidence/orange-v2-2026-09-16.log)
 >
 > **Implementation AI contribution:** Codex wrote the program, simulator,
 > tests, and running instructions in a separate worktree. The integration
