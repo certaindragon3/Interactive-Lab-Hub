@@ -366,6 +366,14 @@ We strongly discourage literal digital or analog clock display: Be creative.
 > **[TerenceZhang29](https://github.com/TerenceZhang29/Interactive-Lab-Hub) ([commit comment](https://github.com/certaindragon3/Interactive-Lab-Hub/commit/fe704d2497fc9b2a02305ed1ede5b3185a8bf17d#commitcomment-200408418)):**
 >
 > it's a timer, not a clock — give it an "after" state. The ripening row runs 0→100% and then stops, which is a progress bar with a nicer skin. The most interesting laundry question isn't "is it done" (the machine beeps) but "how long has it been sitting there wet?" Let the fruit keep going past ripe into overripe/spotted. That turns the device back into something that displays elapsed time rather than counting down, and it's a genuinely novel unit: laundry measured in fruit decay.
+>
+> **[Wenqing Pan](https://github.com/WenqingPan-Lucy/Interactive-Lab-Hub/tree/WenqingPan_Lab/Lab%202) (in person):**
+>
+> Most of their feedback was about how the timer gets stopped: how do I dismiss the
+> final alert, and what stops a stray button press from restarting or switching a
+> running timer? That is the same open question Mandy raised. My current plan is to
+> stop a running timer by pressing both buttons at once, since neither single
+> button is free — A starts the wash and B starts the dry.
 
 ## Update your Lab Hub
 
