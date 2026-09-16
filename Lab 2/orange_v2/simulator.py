@@ -30,23 +30,34 @@ Release all buttons between actions. Idle long presses do nothing.</p>
 <p><small>The screen above is the actual renderer. This page does not access GPIO or a
 laundry machine. Use one simulator tab. Ctrl+C in the terminal stops the server.</small></p>
 <script>
-const keys = new Set(), pointers = new Map(); let queue = Promise.resolve(), stopped = false;
+const keys = new Set(), pointers = new Map(), pressTokens = new Map();
+let queue = Promise.resolve(), stopped = false;
+// Browser clicks may deliver down/up in one tick. Give a desktop tap a small
+// stable interval so it can pass the same 30 ms debounce used by the hardware.
+// Long holds keep their original duration; cancellation invalidates late releases.
+function beginPress(token, down){const stamp={at:performance.now()};
+  pressTokens.set(token,stamp);down();send();}
+function endPress(token, up){const stamp=pressTokens.get(token);if(!stamp)return;
+  setTimeout(()=>{if(pressTokens.get(token)!==stamp)return;
+    pressTokens.delete(token);up();send();},Math.max(0,80-(performance.now()-stamp.at)));}
 function pressed(){return [...new Set([...keys,...pointers.values()])].sort()}
 function send(reset=false){const value=reset?[]:pressed();
   for(const id of ['A','B'])document.getElementById(id).classList.toggle('down',value.includes(id));
   queue=queue.then(()=>fetch(reset?'/reset':'/buttons',{method:'POST',
     headers:{'Content-Type':'application/json'},body:JSON.stringify(value)})).catch(()=>{});}
 for(const id of ['A','B']){const b=document.getElementById(id);
-  b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);pointers.set(e.pointerId,id);send()};
-  b.onpointerup=e=>{pointers.delete(e.pointerId);send()};
+  b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);
+    beginPress('p'+e.pointerId,()=>pointers.set(e.pointerId,id))};
+  b.onpointerup=e=>endPress('p'+e.pointerId,()=>pointers.delete(e.pointerId));
   b.onpointercancel=()=>reset(); b.oncontextmenu=e=>e.preventDefault();
   // Keyboard/assistive activation has no pointer edges; synthesize one short
   // debounced tap. Physical pointer holds keep their actual down/up timing.
   b.onclick=e=>{if(e.detail===0){keys.add(id);send();setTimeout(()=>{keys.delete(id);send()},100)}};}
 window.onkeydown=e=>{const k=e.key.toUpperCase();if(['A','B'].includes(k)){
-  e.preventDefault();if(!keys.has(k)){keys.add(k);send()}}};
-window.onkeyup=e=>{const k=e.key.toUpperCase();if(keys.delete(k)){e.preventDefault();send()}};
-function reset(){keys.clear();pointers.clear();send(true)}
+  e.preventDefault();if(!e.repeat)beginPress('k'+k,()=>keys.add(k))}};
+window.onkeyup=e=>{const k=e.key.toUpperCase();if(keys.has(k)){
+  e.preventDefault();endPress('k'+k,()=>keys.delete(k))}};
+function reset(){pressTokens.clear();keys.clear();pointers.clear();send(true)}
 window.onblur=reset;document.onvisibilitychange=()=>{if(document.hidden)reset()};
 async function frame(){if(stopped)return;try{
   const response=await fetch('/frame',{cache:'no-store'});if(!response.ok)throw Error('frame');

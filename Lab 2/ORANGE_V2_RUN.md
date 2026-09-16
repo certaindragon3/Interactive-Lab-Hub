@@ -50,7 +50,8 @@ to choose an available port automatically. It serves only on `127.0.0.1` and
 does not access the GPIO, SD card, or Pi network. Use a single browser tab.
 
 Hold the onscreen A/B controls with mouse or touch, or use the A/B keyboard
-keys. Keyboard A+B can test simultaneous presses. A focused control activated
+keys. Very fast desktop taps are extended to 80 ms to pass the hardware's
+30 ms debounce; long holds retain their real duration. Keyboard A+B can test simultaneous presses. A focused control activated
 with Enter/Space generates a short tap; use A/B keys for timed holds. Switching
 away from the page cancels the pending gesture without starting or collecting
 a round. An abandoned connection also releases simulator input after one second.

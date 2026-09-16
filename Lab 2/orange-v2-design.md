@@ -51,4 +51,4 @@ Meaningful checks cover short-press immunity, cancellation threshold and early r
 
 ## Contributions
 
-Jiesen selected the long-press interaction and adopted Terence's post-completion idea. Mandy and Wenqing's feedback motivated clearer stopping and accidental-input behavior; their original feedback remains in the Lab 2 report. Codex helped formulate the state rules and implementation edge cases and will generate the storyboard illustrations and layout. Implementation and test results are recorded separately when verified.
+Jiesen selected the long-press interaction and adopted Terence's post-completion idea. Mandy and Wenqing's feedback motivated clearer stopping and accidental-input behavior; their original feedback remains in the Lab 2 report. Codex helped formulate the state rules and implementation edge cases, generated the storyboard illustrations, and assembled the layout. Implementation and verified local test results are recorded in the Lab 2 report and `ORANGE_V2_RUN.md`.

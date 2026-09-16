@@ -463,6 +463,36 @@ Do take advantage of having done the previous iteration to refine and simplify y
 > and assembled the HTML/CSS layout and PNG. The program implementation and
 > its verification are documented separately from this design storyboard.
 
+> **Implementation and local verification — September 16, 2026.**
+>
+> The revised behavior is implemented in [orange_timer.py](orange_timer.py),
+> with separate modules for the timer, display renderer, GPIO adapter, and
+> browser simulator. [Running Orange v2](ORANGE_V2_RUN.md) includes the demo,
+> testing, and Pi startup instructions. At 60× demo speed, washing takes 38
+> real seconds and drying takes 60; the long press still takes two real seconds.
+>
+> All 38 automated checks passed in the integrated checkout with Python
+> 3.11.11 and Pillow 11.3.0. These cover timing boundaries, accidental inputs,
+> cancellation, collection, rendering, the local HTTP simulator, and a mocked
+> hardware adapter. Thirteen screen states were rendered and visually checked.
+> The samples below come from the program's actual 240 × 135 renderer, not
+> Imagegen; their labels sit outside the device screen.
+>
+> ![Local simulation samples showing idle, washing, drying, waiting spots, cancellation hold, and collection fade](assets/orange-v2-simulation/contact-sheet.png)
+>
+> [Five-second breathing sample](assets/orange-v2-simulation/breathing.gif)
+>
+> **Hardware status:** the SD card was in the Mac during this work. Its mounted
+> boot partition was inspected read-only; no application was deployed to the
+> card or Pi. The new GPIO interaction, actual TFT visibility, and a device
+> demonstration video still need to be verified on Orange. The timer stores
+> its current round in memory, so restarting the application starts from idle.
+>
+> **Implementation AI contribution:** Codex wrote the program, simulator,
+> tests, and running instructions in a separate worktree. The integration
+> review corrected uniform color blending to match the storyboard's orange
+> area growing across a teal fruit, and removed an extra fruit from idle.
+
 
 \*\*\***Put a copy of your code in your Lab 2 Github repo.**\*\*\*
 
