@@ -38,6 +38,10 @@ Edit target: the first generated panel 05. Final edit prompt:
 
 > Panel 6. Same woman in kitchen laughs at the absurd sharp comeback from the voice coach, shoulders loosened, one hand pointing toward the device. The SAME screen has one red circular face with a sly sideways smirk, less angry than before, and small audio rhythm lines, suggesting a comic line just spoken. Her other hand approaches the TOP button to end the session, but is not yet touching it. No physical food, no text.
 
-Edit target: the first generated panel 06. Final edit prompt:
+Edit target: the first generated panel 06. First edit prompt:
 
 > Use case: precise-object-edit. This image is the EDIT TARGET, not just a style reference. Remove ONLY the entire thought bubble containing ice cream and its outline and nearby radiating marks. Restore the area as matching warm ivory kitchen wall. Keep laughing woman, her hands pressing the top button, device with two buttons, black screen and one red smirking circular face, kitchen setting, style, composition and dimensions unchanged. Do not add new text, labels, symbols, food, or bubbles.
+
+The first edit left a third hand above the device. The accepted frame was corrected with a second edit using the first edited image as its target:
+
+> Use case: precise-object-edit. The referenced image is the EDIT TARGET. Fix the human anatomy in this single storyboard frame. Remove ONLY the extra third hand and its disconnected hovering forearm above the device (the hand pointing downward from the upper middle of the image). Fill the removed area with the matching empty warm ivory kitchen wall and counter, preserving pencil texture. The woman must have exactly two arms and two hands: one hand resting at her chin while she laughs, and the other attached to the forearm across the table with its index finger pressing the TOP round button. Preserve her face, hair, sage sweater, device with exactly two vertically stacked buttons and one red smirking circular face, table, plant, all other objects, framing, colors, and style. Do not add any hands, fingers, arms, food bubbles, text, labels, or new elements.
