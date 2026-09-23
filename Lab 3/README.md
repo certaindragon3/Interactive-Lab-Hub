@@ -2,6 +2,13 @@
 
 **NAMES OF COLLABORATORS HERE**
 
+> **Jiesen Huang.** I tested the Part 1 speech interaction on Orange. Codex
+> assisted with remote setup, scripts, and this writeup; I provided the speech
+> and listening observations.
+
+> **How to read this page:** my own responses are set in blockquotes like this
+> one, to separate them from the original assignment text.
+
 [![Watch the video](https://user-images.githubusercontent.com/1128669/135009222-111fe522-e6ba-46ad-b6dc-d1633d21129c.png)](https://youtu.be/LZ0VJClIlRI?si=Yy84mcyVYuVV19mn)
 
 In this lab, we want you to design interaction with a speech-enabled device — something that listens and talks to you. This device can do anything *but* control lights (since we already did that in Lab 1). First, we want you to storyboard what you imagine the conversational interaction to be like. Then you will use wizarding techniques to elicit examples of what people might say, ask, or respond. We then want you to use the examples collected from at least two other people to inform the redesign of the device.
@@ -70,7 +77,12 @@ Then run the setup script, which installs the classic speech synthesizers, downl
 
 Check your audio devices before going further. `arecord -l` lists capture devices and `aplay -l` lists playback devices; if your webcam microphone or Bluetooth speaker does not appear, fix that first — every script below assumes the system defaults are the ones you want.
 
-**My setup (September 23):** Orange detected the USB PnP microphone and the UACDemoV1.0 USB speaker without an additional device driver. A three-second recording through the default input contained an audio signal. Playback only became audible after I raised the USB speaker's PCM volume from 40% to 70%; I then heard a test WAV through the USB speaker. I installed the Lab 3 packages in `Lab 3/.venv`, separate from the Pi's boot-display environment.
+> **My setup (September 23):** Orange detected the USB PnP microphone and the
+> UACDemoV1.0 USB speaker without an additional device driver. A three-second
+> recording through the default input contained an audio signal. Playback only
+> became audible after I raised the USB speaker's PCM volume from 40% to 70%;
+> I then heard a test WAV through the USB speaker. I installed the Lab 3
+> packages in `Lab 3/.venv`, separate from the Pi's boot-display environment.
 
 ## A. Text to Speech
 
@@ -111,11 +123,16 @@ The demo script also shows `--output-raw`, which streams audio to the speaker as
 \*\***Write your own shell file to use your favorite of these TTS engines to have your Pi greet you by name.**\*\*
 (This shell file should be saved to your own repo for this lab.)
 
-I tried eSpeak, Festival, and Piper on Orange. I preferred Piper and wrote [greet_jiesen.sh](speech-scripts/greet_jiesen.sh), which uses Piper to say my name.
+> I tried eSpeak, Festival, and Piper on Orange. I preferred Piper and wrote
+> [greet_jiesen.sh](speech-scripts/greet_jiesen.sh), which uses Piper to say my
+> name.
 
 \*\***Then answer: Is the same greeting, in these different voices, the same greeting? Describe one concrete way the voice changed what the utterance seemed to mean or who seemed to be speaking.**\*\*
 
-The words alone do not carry the whole greeting. Piper sounded clearer and friendlier to me; it made the greeting feel more like it came from an approachable conversational device. The older voices felt less suited to that role.
+> The words alone do not carry the whole greeting. Piper sounded clearer and
+> friendlier to me; it made the greeting feel more like it came from an
+> approachable conversational device. The older voices felt less suited to that
+> role.
 
 ## B. Speech to Text
 
@@ -137,18 +154,32 @@ Available sizes, smallest first: `tiny.en`, `base.en`, `small.en`, `medium.en`. 
 
 \*\***Record a few seconds of your own speech (`arecord -d 5 -f cd -c 1 -r 16000 test.wav`) and transcribe it with at least two model sizes. Report the real-time factor for each. At what point does the accuracy improvement stop being worth the delay, for a system that has to answer you?**\*\*
 
-I said **“I was testing”** into the USB microphone and compared both models on the same six-second recording. The transcription time excludes model loading, as the script reports it separately.
-
-| Model | Transcript | Transcription time | Real-time factor |
-| --- | --- | ---: | ---: |
-| `tiny.en` | “I was enjoying the” | 12.03 s | 2.00× |
-| `base.en` | “I was enjoying the trip.” | 11.23 s | 1.87× |
-
-Both transcripts were wrong. In this sample, the larger model added a word I did not say, so it provided no accuracy improvement to justify choosing it for this interaction. The slight timing advantage for `base.en` is from one run and does not establish that it is generally faster. Its first model load took 11.83 s versus 0.56 s for the already cached `tiny.en`; that initial comparison includes possible download time. A longer, more varied set of recordings would be needed before choosing a model. The original WAV remains local on Orange and is not committed.
+> I said **“I was testing”** into the USB microphone and compared both models
+> on the same six-second recording. The transcription time excludes model
+> loading, as the script reports it separately.
+>
+> | Model | Transcript | Transcription time | Real-time factor |
+> | --- | --- | ---: | ---: |
+> | `tiny.en` | “I was enjoying the” | 12.03 s | 2.00× |
+> | `base.en` | “I was enjoying the trip.” | 11.23 s | 1.87× |
+>
+> Both transcripts were wrong. In this sample, the larger model added a word I
+> did not say, so it provided no accuracy improvement to justify choosing it
+> for this interaction. The slight timing advantage for `base.en` is from one
+> run and does not establish that it is generally faster. Its first model load
+> took 11.83 s versus 0.56 s for the already cached `tiny.en`; that initial
+> comparison includes possible download time. A longer, more varied set of
+> recordings would be needed before choosing a model. The original WAV remains
+> local on Orange and is not committed.
 
 \*\***Write your own script that verbally asks for a numerical input (a phone number, zipcode, number of pets) and records the answer the respondent provides.**\*\* Numbers are a good stress test — transcription systems make characteristic errors on digit strings, and you will want to know what they are before you design around them.
 
-My [ask_number.sh](speech-scripts/ask_number.sh) speaks a request for a made-up four-digit number with Piper, then records a six-second reply to `recordings/`. I said **0004**. A `tiny.en` transcription contained “zero, zero, zero, four,” but also inserted unrelated words before and after it. That makes confirmation important before using a digit string as data. The recorded reply stays local and is ignored by Git.
+> My [ask_number.sh](speech-scripts/ask_number.sh) speaks a request for a
+> made-up four-digit number with Piper, then records a six-second reply to
+> `recordings/`. I said **0004**. A `tiny.en` transcription contained “zero,
+> zero, zero, four,” but also inserted unrelated words before and after it.
+> That makes confirmation important before using a digit string as data. The
+> recorded reply stays local and is ignored by Git.
 
 ## C. Turn-taking: knowing when someone has stopped talking
 
@@ -170,9 +201,21 @@ Speak, pause, and watch it transcribe. Now change the endpointing threshold — 
 
 \*\***Try both extremes, and something in between. Describe what each one feels like to talk to. Note specifically: at 0.2s, what kinds of normal speech get cut off? At 1.5s, what does the delay make the system seem like?**\*\*
 
-I tested `listen.py` on Orange at **0.2 s**, **0.8 s**, and **1.5 s** while speaking a sentence with a pause. At 0.2 s it printed one complete “I was testing the microphone today,” and I did not feel cut off in that attempt. At 0.8 s it printed two pieces; the second was mistranscribed. At 1.5 s it also printed two pieces. I preferred the middle setting overall, while the 1.5 s attempt still felt okay.
-
-These attempts used live speech, so my pauses were not precisely the same length. The logs therefore do not show that a higher threshold caused more splitting. A 0.2 s threshold risks treating an ordinary thinking pause as the end of a turn, although I did not observe that failure in this attempt. A 1.5 s threshold necessarily waits longer after a turn and could make a device seem hesitant; I did not find this particular attempt unpleasant. For a prototype, I would start at 0.8 s and test it again with the intended dialogue.
+> I tested `listen.py` on Orange at **0.2 s**, **0.8 s**, and **1.5 s** while
+> speaking a sentence with a pause. At 0.2 s it printed one complete “I was
+> testing the microphone today,” and I did not feel cut off in that attempt.
+> At 0.8 s it printed two pieces; the second was mistranscribed. At 1.5 s it
+> also printed two pieces. I preferred the middle setting overall, while the
+> 1.5 s attempt still felt okay.
+>
+> These attempts used live speech, so my pauses were not precisely the same
+> length. The logs therefore do not show that a higher threshold caused more
+> splitting. A 0.2 s threshold risks treating an ordinary thinking pause as
+> the end of a turn, although I did not observe that failure in this attempt.
+> A 1.5 s threshold necessarily waits longer after a turn and could make a
+> device seem hesitant; I did not find this particular attempt unpleasant. For
+> a prototype, I would start at 0.8 s and test it again with the intended
+> dialogue.
 
 There is no correct value. A system that takes drink orders and a system that listens to someone think out loud want very different thresholds, and the right one depends on what your users are doing with their pauses.
 
@@ -184,7 +227,12 @@ There is no correct value. A system that takes drink orders and a system that li
 (.venv) $ python echo_bot.py
 ```
 
-I ran the complete loop with `--min-silence 0.8`. I said “I am also listening”; the bot recognized it correctly and spoke back “You said: I am also listening.” It measured 1.06 s for transcription and 0.27 s until Piper's first audio, for a 1.34 s gap **after** VAD ended the turn. The perceived wait also includes the endpointing silence before that measurement begins.
+> I ran the complete loop with `--min-silence 0.8`. I said “I am also
+> listening”; the bot recognized it correctly and spoke back “You said: I am
+> also listening.” It measured 1.06 s for transcription and 0.27 s until
+> Piper's first audio, for a 1.34 s gap **after** VAD ended the turn. The
+> perceived wait also includes the endpointing silence before that measurement
+> begins.
 
 ## D. Storyboard
 
