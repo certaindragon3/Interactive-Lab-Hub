@@ -234,6 +234,32 @@ There is no correct value. A system that takes drink orders and a system that li
 > perceived wait also includes the endpointing silence before that measurement
 > begins.
 
+> ### Why I plan to use GPT-Live for the next prototype
+>
+> Part 1's local Piper, faster-whisper, and VAD loop helped me see how voice,
+> recognition, and endpointing each affect a conversation. For the next version
+> of our food-roasting device, I chose [GPT-Live](https://developers.openai.com/api/docs/guides/live)
+> mainly for its **full-duplex** speech: someone can add another dish or interrupt
+> a roast while the agent is speaking. That flexibility matters to the comic
+> timing of a back-and-forth exchange.
+>
+> Our idea may later need **tool calls**, such as looking up a dish, and
+> **image recognition** if someone shows the device their food instead of only
+> describing it. GPT-Live can [delegate tool work to a backend](https://developers.openai.com/api/docs/guides/live-delegation),
+> but [the voice model itself does not accept images](https://developers.openai.com/api/docs/models/gpt-live-1).
+> We would need to send a photo to a separate vision-capable backend and pass a
+> concise result back into the spoken conversation. Neither tool use nor image
+> recognition is part of the current prototype.
+>
+> In a small test on Orange, I used the upper physical button to start and stop
+> a GPT-Live session. I told the agent about cake, broccoli, and Haagen-Dazs in
+> successive turns; it transcribed those foods and spoke a roast for each one.
+> The first playback was too quiet, so I raised the USB speaker's PCM volume
+> from 70% to 100% and confirmed that a test sound was loud enough. This test
+> shows that the basic voice interaction and button control work on our device;
+> it does not yet measure interruption timing or show that the planned backend
+> features work.
+
 ## D. Storyboard
 
 Storyboard and/or use a Verplank diagram to design a speech-enabled device. (Stuck? Make a device that talks for dogs. If that is too stupid, find an application that is better than that.)
