@@ -14,8 +14,13 @@ __pycache__/
 .env.*
 !.env.example
 
-# Local Lab 2 machine setup notes
+# Local Hub instructions and Lab 2 machine setup notes
+/AGENTS.md
+/CLAUDE.md
 /Lab 2/AGENTS.md
+
+# Local Lab 3 architecture exploration
+/Lab 3/architecture-notes.local.md
 
 # Original Part C photos; publish JPEG copies in assets/part-c instead
 /Lab 2/IP.HEIC
