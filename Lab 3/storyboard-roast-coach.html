@@ -24,6 +24,9 @@
     figcaption { padding-top:8px; }
     figcaption strong { display:block; font:700 18px/1.15 Georgia,"Times New Roman",serif; }
     figcaption span { display:block; margin-top:4px; color:var(--muted); font-size:10px; line-height:1.4; letter-spacing:.06em; text-transform:uppercase; }
+    .cue-defs { position:absolute; width:0; height:0; overflow:hidden; }
+    .cue { display:flex; align-items:center; gap:7px; margin-top:4px; color:var(--muted); font-size:10px; line-height:1.4; letter-spacing:.06em; text-transform:uppercase; }
+    .cue svg { flex:none; width:54px; height:15px; fill:none; stroke:currentColor; stroke-width:1.35; stroke-linecap:round; stroke-linejoin:round; }
     .done figcaption strong { color:#ad5e3c; }
     .rhythm { display:flex; justify-content:space-between; align-items:center; gap:40px; border-top:1px solid var(--line); margin-top:38px; padding-top:20px; }
     .rhythm p { margin:0; display:flex; gap:28px; color:var(--muted); font-size:10px; letter-spacing:.06em; text-transform:uppercase; line-height:1.6; }
@@ -43,32 +46,38 @@
   <nav class="tools" aria-label="Download"><a href="storyboard-roast-coach-render.png" download>Download PNG</a></nav>
   <main class="page" id="storyboard">
     <h1>The Roast Coach</h1>
+<svg class="cue-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="cue-listen" viewBox="0 0 60 16"><path d="M2 8 C7 8 7 3 12 3 S17 13 22 13 S27 3 32 3 S37 13 42 13 L49 8 M49 4 L55 8 L49 12"/></symbol>
+  <symbol id="cue-speak" viewBox="0 0 60 16"><path d="M11 4 L5 8 L11 12 M5 8 H16 C21 8 21 3 26 3 S31 13 36 13 S41 3 46 3 S51 8 56 8"/></symbol>
+  <symbol id="cue-cut" viewBox="0 0 60 16"><path d="M2 8 C6 8 6 3 10 3 S14 13 18 13 L22 8 M25 3 L33 13 M33 3 L25 13 M37 8 C41 8 41 3 45 3 S49 13 53 13 M53 4 L58 8 L53 12"/></symbol>
+  <symbol id="cue-hold" viewBox="0 0 60 16"><path d="M5 8 H55"/></symbol>
+</svg>
 <section class="route" aria-labelledby="route-food">
   <h2 id="route-food">One check-in · three food reports</h2>
   <div class="grid">
     <figure>
       <div class="frame"><img src="assets/storyboard-roast-coach/01-start.png" alt="A woman presses the top button of a two-button Orange device; a small neutral face wakes on its screen."><span class="number">01</span></div>
-      <figcaption><strong>Press to check in</strong><span>TOP BUTTON · LISTENING</span></figcaption>
+      <figcaption><strong>Press to check in</strong><small class="cue"><svg aria-hidden="true"><use href="#cue-listen"/></svg>USER → DEVICE · LISTENING</small></figcaption>
     </figure>
     <figure>
       <div class="frame"><img src="assets/storyboard-roast-coach/02-broccoli.png" alt="The woman reports broccoli; the device shows a delighted green circular face."><span class="number">02</span></div>
-      <figcaption><strong>Broccoli earns a cheer</strong><span>GREEN · PROUD</span></figcaption>
+      <figcaption><strong>Broccoli earns a cheer</strong><small class="cue"><svg aria-hidden="true"><use href="#cue-speak"/></svg>DEVICE → USER · GREEN PRAISE</small></figcaption>
     </figure>
     <figure>
       <div class="frame"><img src="assets/storyboard-roast-coach/03-cake.png" alt="The woman admits cake; the circular face turns yellow and raises an eyebrow."><span class="number">03</span></div>
-      <figcaption><strong>Cake raises an eyebrow</strong><span>YELLOW · DRY SARCASM</span></figcaption>
+      <figcaption><strong>Cake raises an eyebrow</strong><small class="cue"><svg aria-hidden="true"><use href="#cue-speak"/></svg>DEVICE → USER · YELLOW ROAST</small></figcaption>
     </figure>
     <figure>
-      <div class="frame"><img src="assets/storyboard-roast-coach/04-chicken.png" alt="The woman adds fried chicken; the device face turns red and glares."><span class="number">04</span></div>
-      <figcaption><strong>Then: fried chicken</strong><span>INTERRUPTION · RED</span></figcaption>
+      <div class="frame"><img src="assets/storyboard-roast-coach/04-chicken.png" alt="The woman raises a hand and interrupts the coach with fried chicken; its yellow face starts turning red as its speech cuts off."><span class="number">04</span></div>
+      <figcaption><strong>She interrupts the coach</strong><small class="cue"><svg aria-hidden="true"><use href="#cue-cut"/></svg>FRIED CHICKEN · VOICE CUT</small></figcaption>
     </figure>
     <figure>
       <div class="frame"><img src="assets/storyboard-roast-coach/05-pause.png" alt="Close-up of the red circular face holding a silent stare while the woman waits."><span class="number">05</span></div>
-      <figcaption><strong>Hold the stare</strong><span>ONE COMIC BEAT</span></figcaption>
+      <figcaption><strong>Hold the stare</strong><small class="cue"><svg aria-hidden="true"><use href="#cue-hold"/></svg>RED · ONE SECOND SILENCE</small></figcaption>
     </figure>
     <figure>
       <div class="frame"><img src="assets/storyboard-roast-coach/06-laugh.png" alt="The woman laughs and reaches for the top button as the red circular face smirks."><span class="number">06</span></div>
-      <figcaption><strong>The punchline lands</strong><span>USER LAUGHS · PRESS TO STOP</span></figcaption>
+      <figcaption><strong>The punchline lands</strong><small class="cue"><svg aria-hidden="true"><use href="#cue-speak"/></svg>DEVICE → USER · LAUGH / STOP</small></figcaption>
     </figure>
   </div>
 </section>
