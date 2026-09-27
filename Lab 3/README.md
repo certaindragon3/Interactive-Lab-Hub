@@ -282,7 +282,16 @@ Write out what you imagine the dialogue to be. Use cards, post-its, or whatever 
 
 Your script should include the pauses. Where does your device wait, and for how long? You now know from Part C that this is a parameter you have to choose, not something that happens for free.
 
-> **Draft performance script (spoken in Chinese).** The user presses the top button. After a clear user pause, the coach waits about 0.4 s before replying. User: “今天吃了西兰花。” Coach, green and upbeat: “西兰花？漂亮，今天的营养部门终于开门营业了。” User: “还有一块蛋糕。” The face turns yellow, raises an eyebrow, and waits about 0.5 s. Coach begins: “哦，蛋糕。西兰花刚发的喜报——” User interrupts: “还有炸鸡。” The coach stops mid-sentence, turns red, holds a silent stare for about 1 s, then says: “炸鸡也来了？西兰花刚拿优秀员工奖，蛋糕和炸鸡就把公司收购了。下一顿别拍续集。” The user laughs and presses the top button to end. These pauses are **staging targets for the video**, not measured device timing; we would tune them after acting out the exchange.
+> **Proposed performance script (English).** One person plays the user; the designer voices the coach and changes a face card or prepared screen image at each cue. The face cues make this possible to rehearse and film before the display is implemented.
+>
+> 1. **Start — neutral, listening face.** *The user presses the top button. The face wakes up.* **Coach:** “Check-in time. What did you eat today?”
+> 2. **Broccoli — green, bouncing smile.** **User:** “Broccoli.” *The coach waits about 0.4 s after the user finishes. Bob the green face twice.* **Coach, pleased:** “Broccoli? Excellent. The nutrition department is finally open for business.”
+> 3. **Cake — yellow, raised eyebrow.** **User:** “And a slice of cake.” *The face changes to yellow. Hold the eyebrow for about 0.5 s.* **Coach, dryly:** “Cake. The broccoli was about to get a glowing review, but—”
+> 4. **Interruption — red, angry face.** *The user cuts in on the dash, before the coach finishes the thought.* **User:** “And fried chicken.” *The coach stops speaking immediately. The red face holds a silent stare for about 1 s.*
+> 5. **Punchline — red face shifts to a crooked smirk.** **Coach, stern but playful:** “Fried chicken too? Broccoli was Employee of the Month. Cake and fried chicken just bought the company. At dinner, the fryer is fired.”
+> 6. **End — face off.** *The user laughs, says “Okay, fair,” and presses the top button to end the check-in. The face goes dark.*
+>
+> The 0.4 s response wait, 0.5 s eyebrow hold, and 1 s silent stare are **staging targets for the video**, not measured device timing. We would tune them after acting out the exchange.
 >
 > The joke escalates with the food sequence and the face's timing. The roast addresses the menu and choices, not the person's body. If the user corrects a food, interrupts, or asks for a gentler tone, the coach should listen and adjust. This response rule and the synchronized face are design intentions; the current Orange prototype has only verified button-controlled voice conversation, without the mood display or food-log tool.
 
