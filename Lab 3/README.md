@@ -301,6 +301,14 @@ Find a partner, and *without sharing the script with your partner* try out the d
 
 \*\***Describe if the dialogue seemed different than what you imagined when it was acted out, and how.**\*\*
 
+> **Acted-out dialogue (56 seconds).** We used food-image props to act out the conversation; this video shows the interaction idea, not the Orange prototype.
+>
+> https://github.com/user-attachments/assets/eac24de0-004f-481f-9eeb-363cdf2a0f6e
+>
+> _[Watch or download the MP4](assets/video/part-e-acting-2026-09-27.mp4) · 56 seconds_
+>
+> **Reflection.** Acting it out revealed an unclear ending: the user may still want to know how the day went. In the next version, a tool call would pass each food report to the front end to update a provisional daily score in the backend. Pressing the end button would trigger the coach's score summary before the session closes. This is a design proposal, not a tested feature.
+
 
 ---
 
