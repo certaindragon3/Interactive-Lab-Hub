@@ -1,11 +1,11 @@
 # Part 2 food coach: implementation and verification
 
-The current prototype uses GPT-Live for conversation in the language of the first user utterance and the existing OpenAI Python SDK's Responses delegation for food tools. The application schedules a background backend pass after about 1.2 seconds without new user transcript fragments; it does not rely on the voice character to remember to delegate. A pause is only a scheduling cue, not proof of a complete utterance. Later fragments and corrections are reconciled using the same entry IDs. `food_coach.py` owns the record and score; the voice and backend models do not choose a numeric score. No Agents SDK, MCP server, camera, or nutrition database is required.
+The current prototype uses GPT-Live for English conversation and the existing OpenAI Python SDK's Responses delegation for food tools. The application schedules a background backend pass after about 1.2 seconds without new user transcript fragments; it does not rely on the voice character to remember to delegate. A pause is only a scheduling cue, not proof of a complete utterance. Later fragments and corrections are reconciled using the same entry IDs. `food_coach.py` owns the record and score; the voice and backend models do not choose a numeric score. No Agents SDK, MCP server, camera, or nutrition database is required.
 
 ## Interaction
 
 1. Press the upper **A button (GPIO23)** to start. A beep acknowledges the press; the screen moves from CONNECTING to LISTENING.
-2. Your first meaningful utterance locks the conversation language for this check-in; a greeting counts. Later code-switching and foreign food names do not reset it. Report a food and portion. The backend uses `get_food_log` to establish or recover authoritative IDs, then calls `log_food`; it reuses known IDs instead of rereading the log before every add. Unknown portions are saved as pending and the coach asks for clarification. You can interrupt a joke, correct a food or portion, remove an entry, or ask for a gentler tone.
+2. The coach always speaks English, including when your first utterance or later food reports use another language. Report a food and portion. The backend uses `get_food_log` to establish or recover authoritative IDs, then calls `log_food`; it reuses known IDs instead of rereading the log before every add. Unknown portions are saved as pending and the coach asks for clarification. You can interrupt a joke, correct a food or portion, remove an entry, or ask for a gentler tone.
 3. Press A again to finish. Repeated end presses are ignored. Microphone EOF requests final reconciliation, rather than closing the API connection. The application checks the last reports, freezes and saves the ledger, and creates the recap text.
 4. The recap is rendered through `gpt-4o-mini-tts` and sent to the same speaker stream. Closing the PCM pipe lets `aplay` drain the entire output. Only after the controller acknowledges `aplay` exit 0 does the client send `session.close`. This verifies the audio process completed; a listener still needs to verify audibility and wording.
 5. The controller returns to a saved-result screen, ready for another check-in. A new check-in creates a separate record. **This is not a persistent daily total across sessions.**
@@ -26,7 +26,7 @@ This is a fictional menu game, not a validated nutrition, calorie, weight, or he
 | Fried food | −10 |
 | Other / mixed or unclear dish | 0 |
 
-Start at 50, cap each category's total contribution to −20…+20, then clamp the final score to 0…100. If no entry has a stated portion, return no score rather than 50. Pending portions contribute nothing. An explicitly stated amount and unit (such as one bowl, half a slice or two pieces) is sufficient for this game. A bare size adjective like “large steak” is rejected as a known portion and must remain pending; portions are recorded verbatim and **do not scale the points or imply measured serving sizes**. Fried chicken uses the fried category, not both fried and protein. The model classifies the reported food; users can correct that interpretation.
+Start at 50, cap each category's total contribution to −20…+20, then clamp the final score to 0…100. If no entry has a stated portion, return no score rather than 50. Pending portions contribute nothing. An explicitly stated amount and unit (such as one bowl, half a slice or two pieces) is sufficient for this game. A bare size adjective like “large steak” is rejected as a known portion and must remain pending; the stated amounts are retained and **do not scale the points or imply measured serving sizes**. Fried chicken uses the fried category, not both fried and protein. The model classifies the reported food; users can correct that interpretation.
 
 Example: one bowl of broccoli (+10), half a slice of cake (−5), and two pieces of fried chicken (−10) produce **45**. Cake without a portion is pending, so broccoli alone produces a provisional 60. Clarifying cake as half a slice changes this to 55 without adding a second cake entry.
 
@@ -49,7 +49,7 @@ cd ~/Interactive-Lab-Hub
 bash 'Lab 3/speech-scripts/run_roast_button.sh'
 ```
 
-The first utterance and detected language code are saved with the check-in. GPT-Live is instructed to adopt that language from its first reply; the application confirms and pins it after the first transcript pause. Closing templates use the same language, with food names and numeric values inserted by the application after placeholder validation. A new A-button check-in selects a new language. Chinese and English are covered by the live checks; other languages use model detection/localization but have not received listening tests.
+Every check-in is initialized with `language=en`; there is no first-utterance language detection call. Praise, roasts, clarification questions and the humorous recap all use English. Food names are stored in English for the spoken recap, while stated portions are preserved. Numeric values are still inserted by the application after placeholder validation.
 
 The existing ignored `Lab 3/.env` supplies the API key. Do not put keys in source or logs. `COACH_PYTHON`, `COACH_HARDWARE_PYTHON` and `COACH_ENV_FILE` allow testing in an isolated deployment directory while reusing the existing environments and credential file. `COACH_BACKEND_MODEL` overrides the existing `gpt-5.6-luna` backend when explicitly testing another supported model.
 
@@ -66,7 +66,7 @@ An optional paid API test generates synthetic Chinese speech, exercises the real
 
 ```bash
 'Lab 3/.venv/bin/python' 'Lab 3/speech-scripts/smoke_food_coach.py' --device default
-# English opening, Chinese correction, same locked English conversation:
+# English opening with a Chinese correction; output stays English:
 'Lab 3/.venv/bin/python' 'Lab 3/speech-scripts/smoke_food_coach.py' --device null --language en
 ```
 

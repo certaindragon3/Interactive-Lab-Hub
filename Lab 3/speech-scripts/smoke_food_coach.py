@@ -78,9 +78,8 @@ async def main(device, empty=False, language="zh"):
         entries = list(record["entries"].values())
         print(json.dumps({"exit": agent.returncode, "entries": entries, "summary": record.get("summary"), "playback": record.get("playback"), "finalized": record.get("session_finalized"), "reconciled": record.get("reconciled")}, ensure_ascii=False), flush=True)
         assert agent.returncode == 0 and record.get("session_finalized")
-        if not empty:
-            assert record.get("language", "").startswith(language), "First-utterance language was not retained"
-            print("LANGUAGE_LOCK " + record["language"], flush=True)
+        assert record.get("language") == "en", "Coach output must always be English"
+        print("LANGUAGE_LOCK " + record["language"], flush=True)
         assert record.get("playback") == "aplay_drained" and record.get("reconciled")
         assert len(entries) == (0 if empty else 3) and all(e["portion"] for e in entries)
         assert {e["category"] for e in entries} == (set() if empty else {"vegetable", "dessert", "fried"})
@@ -99,6 +98,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--device", default="null", help="ALSA playback device (default null)")
     parser.add_argument("--empty", action="store_true", help="Quick no-food ending test")
-    parser.add_argument("--language", choices=["zh", "en"], default="zh", help="English case includes a Chinese correction to check the lock")
+    parser.add_argument("--language", choices=["zh", "en"], default="zh", help="Synthetic INPUT language; coach output must always stay English")
     args = parser.parse_args()
     asyncio.run(main(args.device, args.empty, args.language))

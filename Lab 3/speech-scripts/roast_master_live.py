@@ -14,10 +14,10 @@ from uuid import uuid4
 
 from food_coach import BACKEND_PROMPT, TOOLS, Ledger, atomic_json
 from coach_backend import Backend, TranscriptSync
-from coach_language import detect_language, localize_recap
+from coach_language import localize_recap
 
 LAB_DIR = Path(__file__).resolve().parent.parent
-PROMPT = """LANGUAGE RULE (takes precedence over the language of these instructions and examples): The user's FIRST meaningful utterance selects the language for this entire check-in. Reply in its dominant language from the very first response. A greeting counts. Keep that language for praise, roasts, questions and the goodbye, even if later speech or food names use another language. Do not switch until a new check-in. Translate the character/style guidance below into that language; Chinese examples do NOT prescribe Chinese output.
+PROMPT = """LANGUAGE RULE (takes precedence over the language of these instructions and examples): Always speak English, from the very first response through praise, roasts, questions and the goodbye. The conversation language is fixed to English for every check-in. Understand user input in other languages, but do not switch your output language, even when the first utterance is not English. Translate the character/style guidance below into English; Chinese examples do NOT prescribe Chinese output.
 你是 Orange，用户请来的毒舌饮食教练。像一个嘴很损、站在用户这边、有强烈个人态度的真人。你不是客服，不是记账员，更不是每句都端水的营养播音员。
 你的两面都要鲜明：supportive 和 judgemental。用户报出值得肯定的选择时，真诚、具体、有劲地夸；主动补充或纠正记录、愿意如实说完菜单时，也认可他的坦诚。别每句后面都转成批评。遇到蛋糕、炸鸡这种喜剧情节时，态度骤变，反讽要狠、具体、出其不意，不用“偶尔吃一点也没关系”马上把包袱收回。
 吐槽的是这次菜单如何发展，不是人的身体、体重、长相、人格或价值；不要羞辱人，不鼓励挨饿、补偿性运动、极端节食。吃了某种食物不等于这个人失败。用户真在沮丧时先接住情绪；要求温柔或停下时立即照做。
@@ -69,13 +69,13 @@ async def run(args):
     ending = False
     reader_added = False
     pending_byte = b""
-    first_words = []
-    language_task = None
-    language = None
+    language = "en"
+    ledger.data["language"] = language
+    ledger.save()
     backend_model = os.environ.get("COACH_BACKEND_MODEL", "gpt-5.6-luna")
     last_input = time.monotonic()
     input_bytes = output_bytes = 0
-    status = {"phase": "connecting", "mood": "neutral", "score": None}
+    status = {"phase": "connecting", "mood": "neutral", "score": None, "language": language}
 
     def publish(**updates):
         status.update(updates)
@@ -124,26 +124,6 @@ async def run(args):
                     if size:
                         await connection.session.input_audio.append(audio=base64.b64encode(chunk[:size]).decode())
 
-            async def lock_language():
-                nonlocal language
-                first = "".join(first_words).strip()
-                if not first:
-                    language = "zh"  # No utterance: only the no-food ending needs a default.
-                    return
-                ledger.data["first_utterance"] = first
-                language = await detect_language(client, backend_model, first)
-                ledger.data["language"] = language
-                ledger.save()
-                publish(language=language)
-                await connection.session.instructions.append(delegation_id=None,
-                    content=f"The application has locked this check-in language to {language}, based only on the user's first utterance. Use that language for all speech. Later code-switching or foreign food names do not change the language. Keep your supportive, sharply judgmental comic character; do not announce this language setting.")
-
-            async def ensure_language():
-                nonlocal language_task
-                if language_task is None:
-                    language_task = asyncio.create_task(lock_language())
-                await language_task
-
             async def sync_food_reports():
                 await ready.wait()
                 while not stopping:
@@ -151,7 +131,6 @@ async def run(args):
                     if transcript_sync.due(time.monotonic(), backend.active, ending or finish_requested.is_set()):
                         transcript_sync.dispatched()
                         backend.active = True
-                        await ensure_language()
                         publish(phase="thinking")
                         await connection.response.item.create(item={"type": "message", "role": "user", "content": [
                             {"type": "input_text", "text": "[APPLICATION BACKGROUND SYNC] Check recent USER speech in the conversation and maintain the food log now. A pause may be mid-sentence: do not invent missing details or treat jokes/hypotheticals as food. Reuse existing IDs; save new food once, apply corrections/removals, and keep unclear portions null. This is background bookkeeping, not a request to repeat a confirmation or score aloud. If nothing changed, finish without changing records."}]})
@@ -189,7 +168,6 @@ async def run(args):
                         reconciled = not backend.failed
                 except (TimeoutError, OSError):
                     print("Final reconciliation incomplete; retaining saved entries", file=sys.stderr)
-                await ensure_language()
                 ledger.freeze(reconciled)
                 summary = await localize_recap(client, backend_model, ledger, language, reconciled)
                 ledger.data["summary"] = summary
@@ -274,8 +252,6 @@ async def run(args):
                             if is_input:
                                 last_input = time.monotonic()
                                 transcript_sync.heard(last_input)
-                                if language_task is None:
-                                    first_words.append(event.delta)
                             if not ending:
                                 publish(phase="listening" if is_input else "speaking")
                             print(("USER " if is_input else "COACH ") + event.delta, file=sys.stderr, flush=True)
@@ -298,8 +274,6 @@ async def run(args):
                     loop.remove_reader(sys.stdin.fileno())
                 for sig in (signal.SIGINT, signal.SIGUSR1):
                     loop.remove_signal_handler(sig)
-                if language_task is not None:
-                    tasks.append(language_task)
                 for task in tasks:
                     task.cancel()
                 results = await asyncio.gather(*tasks, return_exceptions=True)

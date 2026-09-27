@@ -342,7 +342,7 @@ The system should:
 
 *Include videos or screencaptures of both the system and the controller.*
 
-> **Implemented prototype (2026-09-27).** The upper A button starts a GPT-Live check-in. The first user utterance selects the language for the whole conversation, including the final recap; later code-switching does not reset it. After a pause in the user transcript, the application schedules a Responses backend to call `get_food_log` and `log_food`; Python saves the foods, portions, stable IDs and computed score. Unknown portions remain pending, corrections replace entries, and duplicate calls do not add points twice. The prompt makes jokes about the food sequence and supports a gentler tone; it no longer uses body-directed insults.
+> **Implemented prototype (2026-09-27).** The upper A button starts a GPT-Live check-in. The coach always speaks English, including questions and the final recap, regardless of the language of the first or later user utterances. After a pause in the user transcript, the application schedules a Responses backend to call `get_food_log` and `log_food`; Python saves the foods, portions, stable IDs and computed score. Unknown portions remain pending, corrections replace entries, and duplicate calls do not add points twice. The prompt makes jokes about the food sequence and supports a gentler tone; it no longer uses body-directed insults.
 >
 > **A clear ending.** Pressing A again stops capture and requests final reconciliation. The app saves a fixed food recap and score, synthesizes that text, waits for the local audio player to drain, and only then closes Live. A failed reconciliation or playback is recorded as incomplete. Each check-in has its own private local record; there is no combined daily history yet.
 >

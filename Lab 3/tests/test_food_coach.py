@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "speech-scripts"))
 from food_coach import Ledger
 from coach_backend import Backend, TranscriptSync
 from roast_button import VoiceSession
-from coach_language import fill_template, detect_language, localize_recap
+from coach_language import fill_template, localize_recap
 
 
 def food(entry="broccoli", **changes):
@@ -203,11 +203,15 @@ class ButtonTests(unittest.TestCase):
 
 
 class LanguageTests(unittest.IsolatedAsyncioTestCase):
-    async def test_language_detection_treats_first_utterance_as_data(self):
-        client = SimpleNamespace(responses=SimpleNamespace(create=AsyncMock(return_value=SimpleNamespace(output_text='{"language":"en"}'))))
-        self.assertEqual(await detect_language(client, "backend", "Hello, I ate broccoli."), "en")
-        payload = json.loads(client.responses.create.call_args.kwargs["input"])
-        self.assertEqual(payload["first_utterance"], "Hello, I ate broccoli.")
+    async def test_english_recap_preserves_saved_food_and_score(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Ledger(Path(tmp) / "record.json")
+            ledger.execute("a", "log_food", food(food="broccoli"))
+            result = SimpleNamespace(output_text=json.dumps({"template": "[[FOOD_0]] — [[SCORE]] points. See you next meal!"}))
+            client = SimpleNamespace(responses=SimpleNamespace(create=AsyncMock(return_value=result)))
+            recap = await localize_recap(client, "backend", ledger, "en", True)
+            self.assertEqual(recap, "broccoli — 60 points. See you next meal!")
+            self.assertEqual(json.loads(client.responses.create.call_args.kwargs["input"])["language"], "en")
 
     async def test_translation_cannot_drop_food_or_invent_numeric_score(self):
         source = "[[FOOD_0]]——[[SCORE]]分。"
