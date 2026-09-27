@@ -15,4 +15,4 @@ trap restore_display EXIT
 if [[ "$was_active" == "active" ]]; then
   sudo systemctl stop piscreen.service
 fi
-"$repo_dir/.venv/bin/python" "$repo_dir/Lab 3/speech-scripts/roast_button.py" "$@"
+"${COACH_HARDWARE_PYTHON:-$repo_dir/.venv/bin/python}" "$repo_dir/Lab 3/speech-scripts/roast_button.py" "$@"

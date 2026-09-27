@@ -323,7 +323,7 @@ For Part 2, you will redesign the interaction with the speech-enabled device usi
 3. Make a new storyboard, diagram and/or script based on these reflections.
 4. (optional) Integrate [input devices](inputs.md) in the system
 
-> **Part 2 design direction (planned).** The acting exercise suggests that the check-in needs a clear result at the end, not just a final joke.
+> **Part 2 design direction (from the Part E reflection).** The acting exercise suggests that the check-in needs a clear result at the end, not just a final joke.
 >
 > 1. **Score and finish.** Each food report would call `log_food` with the item and portion, asking when the portion is unclear. App code would use a fixed, explainable rubric to update a score stored in the backend; corrections would replace an entry rather than count it twice. Pressing the top button would trigger a short food recap and the stored score before closing the session. This would be a real computed score for the reported foods, not a medical measure of health.
 > 2. **Show the interaction state.** The face would still convey the coach's comic mood, while an LED or small screen cue would distinguish listening, thinking, and speaking. The score could update behind the scenes and appear at the end as a reveal.
@@ -341,6 +341,26 @@ The system should:
 *Document how the system works.*
 
 *Include videos or screencaptures of both the system and the controller.*
+
+> **Implemented prototype (2026-09-27).** The upper A button starts a GPT-Live check-in. The first user utterance selects the language for the whole conversation, including the final recap; later code-switching does not reset it. After a pause in the user transcript, the application schedules a Responses backend to call `get_food_log` and `log_food`; Python saves the foods, portions, stable IDs and computed score. Unknown portions remain pending, corrections replace entries, and duplicate calls do not add points twice. The prompt makes jokes about the food sequence and supports a gentler tone; it no longer uses body-directed insults.
+>
+> **A clear ending.** Pressing A again stops capture and requests final reconciliation. The app saves a fixed food recap and score, synthesizes that text, waits for the local audio player to drain, and only then closes Live. A failed reconciliation or playback is recorded as incomplete. Each check-in has its own private local record; there is no combined daily history yet.
+>
+> **Explainable game score.** The provisional rubric starts at 50: vegetable/fruit +10, protein/staple +5, dessert −5, fried food −10, and other/mixed food 0 per entry with a stated portion. Each category is capped at ±20 and the result at 0–100; no known portions means no score. Portions are recorded, not converted to calories or used as quantity multipliers. These are arbitrary interaction-design weights, not validated nutrition advice. One bowl of broccoli, half a slice of cake and two pieces of fried chicken produce 45.
+>
+> **Screen.** One face shows the coach's reaction, with a separate neutral activity cue for listening, saving, speaking and recap. The score appears at the end. The screen is used for these cues; a separate LED and precisely timed one-second stare are not implemented.
+>
+> **Renderer preview.** These are generated frames from the screen renderer, not photographs of the device.
+>
+> ![Listening, saving, speaking and recap screen frames](test-evidence/food-coach-render-preview.png)
+>
+> **Implementation and run instructions:** [Food coach](FOOD_COACH.md) · [Application ledger and rubric](speech-scripts/food_coach.py) · [Live client](speech-scripts/roast_master_live.py) · [Button controller](speech-scripts/roast_button.py).
+>
+> **Author trial and iteration.** The first real button-and-microphone trial completed the saved-record and playback loop, but I found the coach too mechanical: it did not feel like a conversation. In the second trial I liked the revised character, which restored encouragement and sharper menu jokes, but the ending still sounded mechanical. That trial also exposed missed bookkeeping during the conversation. The next changes move routine record updates to an app-triggered background pass and replace formal closing labels with a short food recap, the stored score and a contextual punchline. Personality quality is assessed by listening, not proved by unit tests.
+>
+> **Verification status.** Targeted automated tests cover persistence, unknown portions, corrections, duplicate calls, backend tool continuation and the end-button playback handshake. Current device and API results are recorded in [the verification note](test-evidence/food-coach-2026-09-27.md). Automated synthetic speech is not participant testing. Camera recognition and the two-person usability study remain unfinished.
+>
+> **AI assistance.** Codex helped implement the ledger, API bridge, button ending, screen rendering, tests and documentation. GPT-Live generates conversational speech, the delegated model interprets food reports, and TTS renders the application-written recap. The application computes and stores the score.
 
 ## Test the system
 

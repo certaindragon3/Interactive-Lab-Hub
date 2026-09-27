@@ -40,3 +40,6 @@ __pycache__/
 # Hub-local GitHub video workflow and original recording
 /.agents/skills/github-readme-video/
 /Lab 2/video.MOV
+
+# Private food check-in records and runtime status
+/Lab 3/.food-coach/

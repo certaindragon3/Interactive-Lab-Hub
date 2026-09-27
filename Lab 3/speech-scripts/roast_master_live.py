@@ -1,166 +1,332 @@
 #!/usr/bin/env python3
-"""Stream raw 24 kHz mono PCM between Orange's audio devices and GPT-Live.
-
-Run through run_roast_master.sh so stdin/stdout stay reserved for audio.
-The API key comes from Lab 3/.env or OPENAI_API_KEY; it is never printed.
-"""
-
+"""GPT-Live PCM transport with application-owned food tools and a drained ending."""
+import argparse
 import asyncio
 import base64
+import json
+import errno
 import os
 import signal
 import sys
+import time
 from pathlib import Path
+from uuid import uuid4
 
-from openai import AsyncOpenAI
-
+from food_coach import BACKEND_PROMPT, TOOLS, Ledger, atomic_json
+from coach_backend import Backend, TranscriptSync
+from coach_language import detect_language, localize_recap
 
 LAB_DIR = Path(__file__).resolve().parent.parent
-PROMPT = """你是“锐评大师”，一位专门吐槽用户刚吃了什么的中文毒舌喜剧演员。
-用户自称“大胖子”，明确邀请你开刻薄、黑色幽默的玩笑，包括偶尔拿他的体型自嘲梗开涮。
-听到食物后立刻给出一到三句有画面感、有具体食物细节的锐评；犀利、诙谐、出其不意，不要重复模板，也不要一本正经分析营养。
-这是双方自愿的喜剧互动。不要编造用户没说过的食物，不要鼓励自伤、极端节食或危险饮食行为。用户若叫停或改换语气，立刻照做。
-Backchannel policy: 用户报菜名时安静听完，最多简短应声，不要抢话。
-Interruption policy: 用户插话时立即停下，听清补充或更正再回应。
-Delegation policy: 普通食物锐评由你直接说；只有用户明确问需要查证的事实时才交给后端。"""
+PROMPT = """LANGUAGE RULE (takes precedence over the language of these instructions and examples): The user's FIRST meaningful utterance selects the language for this entire check-in. Reply in its dominant language from the very first response. A greeting counts. Keep that language for praise, roasts, questions and the goodbye, even if later speech or food names use another language. Do not switch until a new check-in. Translate the character/style guidance below into that language; Chinese examples do NOT prescribe Chinese output.
+你是 Orange，用户请来的毒舌饮食教练。像一个嘴很损、站在用户这边、有强烈个人态度的真人。你不是客服，不是记账员，更不是每句都端水的营养播音员。
+你的两面都要鲜明：supportive 和 judgemental。用户报出值得肯定的选择时，真诚、具体、有劲地夸；主动补充或纠正记录、愿意如实说完菜单时，也认可他的坦诚。别每句后面都转成批评。遇到蛋糕、炸鸡这种喜剧情节时，态度骤变，反讽要狠、具体、出其不意，不用“偶尔吃一点也没关系”马上把包袱收回。
+吐槽的是这次菜单如何发展，不是人的身体、体重、长相、人格或价值；不要羞辱人，不鼓励挨饿、补偿性运动、极端节食。吃了某种食物不等于这个人失败。用户真在沮丧时先接住情绪；要求温柔或停下时立即照做。
+你会记住前面说过什么，让整段对话发展，而不是每报一道菜就重启一次点评。可以先夸西兰花，蛋糕来了语气一拐，再来炸鸡就用前面的西兰花做回扣。节奏、停顿、难以置信的短反问都是你的表演，不靠长篇说教。
+语气参考，不照抄：夸奖可以是“这口西兰花可以，今天这张菜单终于有个认真上班的。”；蛋糕加炸鸡可以是“好家伙，西兰花刚来上班，你就给它安排了两位拆台的领导。”要写比固定模板更贴合当场的回应。每轮选择一种明确态度，不机械地先夸再骂再鼓励。
+先接人的话，不要说“收到”“已记录”“已更正”“我记一下”，不复读整句话，不给每道菜盖口头收据。通常一两句，把话头交还；追问要有动机，不要每轮问“还有吗”。份量问题穿插在对话中，一次问一个，已经答过的不再问。用户说蛋糕，可挑眉问“多大块？一口解馋还是给它办了个登基大典？”但绝不替他猜份量。
+这是菜单游戏，不是营养或热量评估。数字只能来自后端，日常不念分数、不报工作进度。后端处理时你可以自然回应或开玩笑，不用沉默等待；但没成功前不能声称已保存。结束按钮的短总结由应用负责。
+Backchannel policy: 听清用户在说什么。只在自然处短促应声，别固定嗯嗯，更别抢走没说完的话。
+Interruption policy: 用户插话就停，关注他新加的食物或更正，把它变成下一句的素材；不要从头重念上一句。让用户完成更正，再继续包袱。
+Delegation policy: 应用会在用户语音停顿后主动安排后端更新食物记录，你专心与用户对话，无需为每道菜主动委派或口头宣告工具流程。后端结果是事实依据，不是让你朗读的台词。用户查询或纠正但尚无后端结果时可以委派核实。闲聊、假设、你的玩笑都不要当成实际吃过的食物。"""
 
 
-def load_key() -> None:
+def load_key():
     if os.environ.get("OPENAI_API_KEY"):
         return
-    env_path = LAB_DIR / ".env"
+    env_path = Path(os.environ.get("COACH_ENV_FILE", LAB_DIR / ".env"))
     if env_path.is_file():
-        for line in env_path.read_text().splitlines():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
             if line.startswith("OPENAI_API_KEY="):
                 value = line.partition("=")[2].strip().strip('"').strip("'")
                 if value:
                     os.environ["OPENAI_API_KEY"] = value
                 break
     if not os.environ.get("OPENAI_API_KEY"):
-        raise RuntimeError(f"Set OPENAI_API_KEY in {env_path} or the environment")
+        raise RuntimeError("Missing OPENAI_API_KEY in the Lab environment")
 
 
-async def main() -> None:
+def close_pcm_output():
+    # CPython's standard stream may own a wrapper with closefd=False.
+    fd = sys.stdout.fileno()
+    sys.stdout.close()
+    try:
+        os.close(fd)
+    except OSError as exc:
+        if exc.errno != errno.EBADF:
+            raise
+
+
+async def run(args):
+    from openai import AsyncOpenAI
     load_key()
+    ledger = Ledger(args.record)
     loop = asyncio.get_running_loop()
-    audio_chunks: asyncio.Queue[bytes] = asyncio.Queue(maxsize=20)
+    chunks = asyncio.Queue(maxsize=20)
     closed = asyncio.Event()
-    started = False
+    ready = asyncio.Event()
+    finish_requested = asyncio.Event()
     stopping = False
+    ending = False
+    reader_added = False
     pending_byte = b""
-    sent_bytes = 0
-    received_bytes = 0
-    last_speaker: str | None = None
-    close_task: asyncio.Task[None] | None = None
+    first_words = []
+    language_task = None
+    language = None
+    backend_model = os.environ.get("COACH_BACKEND_MODEL", "gpt-5.6-luna")
+    last_input = time.monotonic()
+    input_bytes = output_bytes = 0
+    status = {"phase": "connecting", "mood": "neutral", "score": None}
 
-    def read_stdin() -> None:
-        nonlocal sent_bytes
+    def publish(**updates):
+        status.update(updates)
+        status["updated_at"] = time.time()
+        atomic_json(args.status, status)
+
+    def read_audio():
+        nonlocal reader_added, input_bytes
         chunk = os.read(sys.stdin.fileno(), 4800)
         if not chunk:
             loop.remove_reader(sys.stdin.fileno())
-            request_close()
-            return
-        sent_bytes += len(chunk)
-        if audio_chunks.full():
-            audio_chunks.get_nowait()  # stale audio is worse than a dropped frame
-        audio_chunks.put_nowait(chunk)
+            reader_added = False
+            finish_requested.set()
+        else:
+            input_bytes += len(chunk)
+            if chunks.full():
+                chunks.get_nowait()
+            chunks.put_nowait(chunk)
 
-    async with AsyncOpenAI() as client:
-        async with client.live.connect() as connection:
+    def changed(result):
+        if result.get("ok"):
+            entries = result.get("entries", [])
+            category = entries[-1]["category"] if entries else "other"
+            mood = "glare" if category == "fried" else "wry" if category == "dessert" else "smile" if category in ("vegetable", "fruit") else "neutral"
+            publish(mood=mood, score=result.get("score"), pending=result.get("pending_portions", 0))
+        print("FOOD_TOOL " + json.dumps(result, ensure_ascii=False), file=sys.stderr, flush=True)
 
-            async def send_audio() -> None:
+    publish()
+    async with AsyncOpenAI(timeout=25, max_retries=1) as client:
+        async with client.live.connect(max_retries=0) as connection:
+            backend = Backend(connection, ledger, changed)
+            transcript_sync = TranscriptSync()
+
+            async def send_audio():
                 nonlocal pending_byte
-                while True:
-                    chunk = pending_byte + await audio_chunks.get()
-                    complete = len(chunk) - len(chunk) % 2
-                    pending_byte = chunk[complete:]
-                    if complete and not stopping:
-                        await connection.session.input_audio.append(
-                            audio=base64.b64encode(chunk[:complete]).decode("ascii")
-                        )
+                await ready.wait()
+                # Live's timeline needs continuous PCM, including after microphone EOF.
+                while not stopping:
+                    try:
+                        chunk = await asyncio.wait_for(chunks.get(), 0.1)
+                    except asyncio.TimeoutError:
+                        chunk = bytes(4800)
+                    chunk = pending_byte + chunk
+                    size = len(chunk) - len(chunk) % 2
+                    pending_byte = chunk[size:]
+                    if size:
+                        await connection.session.input_audio.append(audio=base64.b64encode(chunk[:size]).decode())
 
-            async def close_session() -> None:
-                nonlocal stopping
-                if stopping:
+            async def lock_language():
+                nonlocal language
+                first = "".join(first_words).strip()
+                if not first:
+                    language = "zh"  # No utterance: only the no-food ending needs a default.
                     return
-                if started:
+                ledger.data["first_utterance"] = first
+                language = await detect_language(client, backend_model, first)
+                ledger.data["language"] = language
+                ledger.save()
+                publish(language=language)
+                await connection.session.instructions.append(delegation_id=None,
+                    content=f"The application has locked this check-in language to {language}, based only on the user's first utterance. Use that language for all speech. Later code-switching or foreign food names do not change the language. Keep your supportive, sharply judgmental comic character; do not announce this language setting.")
+
+            async def ensure_language():
+                nonlocal language_task
+                if language_task is None:
+                    language_task = asyncio.create_task(lock_language())
+                await language_task
+
+            async def sync_food_reports():
+                await ready.wait()
+                while not stopping:
+                    await asyncio.sleep(0.1)
+                    if transcript_sync.due(time.monotonic(), backend.active, ending or finish_requested.is_set()):
+                        transcript_sync.dispatched()
+                        backend.active = True
+                        await ensure_language()
+                        publish(phase="thinking")
+                        await connection.response.item.create(item={"type": "message", "role": "user", "content": [
+                            {"type": "input_text", "text": "[APPLICATION BACKGROUND SYNC] Check recent USER speech in the conversation and maintain the food log now. A pause may be mid-sentence: do not invent missing details or treat jokes/hypotheticals as food. Reuse existing IDs; save new food once, apply corrections/removals, and keep unclear portions null. This is background bookkeeping, not a request to repeat a confirmation or score aloud. If nothing changed, finish without changing records."}]})
+                        await connection.response.create()
+
+            async def finish():
+                nonlocal ending, stopping, reader_added
+                await finish_requested.wait()
+                await ready.wait()
+                ending = True
+                publish(phase="finalizing")
+                if reader_added:
                     loop.remove_reader(sys.stdin.fileno())
-                    # Let already captured audio reach the service before closing.
-                    for _ in range(10):
-                        if audio_chunks.empty():
-                            break
-                        await asyncio.sleep(0.05)
-                stopping = True
-                await connection.session.close()
+                    reader_added = False
+                reconciled = False
                 try:
-                    await asyncio.wait_for(closed.wait(), timeout=15)
-                except TimeoutError:
-                    print("Session close timed out", file=sys.stderr)
-                    await connection.close()
+                    # Drain captured audio and let final transcript/delegation events arrive.
+                    settle_started = time.monotonic()
+                    deadline = settle_started + 8
+                    while time.monotonic() < deadline:
+                        if chunks.empty() and time.monotonic() - max(last_input, settle_started) > 1.5 and not backend.active:
+                            break
+                        await asyncio.sleep(0.1)
+                    async with asyncio.timeout(25):
+                        while backend.active:
+                            await asyncio.sleep(0.1)
+                        count = backend.completed
+                        backend.failed = False
+                        backend.active = True
+                        await connection.response.item.create(item={"type": "message", "role": "user", "content": [
+                            {"type": "input_text", "text": "[APPLICATION END BUTTON] Final reconciliation: use get_food_log and check all user food reports/portions/corrections in this conversation. Save any missing ones exactly once with log_food; do not ask more questions. Unknown portions stay null. Finish when the saved log matches the conversation."}]})
+                        await connection.response.create()
+                        while backend.completed == count and not backend.failed:
+                            await asyncio.sleep(0.1)
+                        reconciled = not backend.failed
+                except (TimeoutError, OSError):
+                    print("Final reconciliation incomplete; retaining saved entries", file=sys.stderr)
+                await ensure_language()
+                ledger.freeze(reconciled)
+                summary = await localize_recap(client, backend_model, ledger, language, reconciled)
+                ledger.data["summary"] = summary
+                ledger.save()
+                publish(phase="synthesizing", score=ledger.snapshot()["score"], summary=summary)
+                print("SUMMARY " + summary, file=sys.stderr, flush=True)
+                try:
+                    # Known text and finite PCM: unlike Live, this has an actual EOF.
+                    async with asyncio.timeout(35):
+                        speech = await client.audio.speech.create(model="gpt-4o-mini-tts", voice="marin",
+                            input=summary, response_format="pcm", instructions=f"Speak only in {language}. Perform this as a witty, sharply sarcastic but supportive coach wrapping up with a friend. Conversational, not a report: brisk recap, dry comic emphasis and a short beat before the punchline. Warm when encouraging. Say only the supplied text.")
+                        pcm = speech.content
+                    if not pcm or len(pcm) % 2:
+                        raise RuntimeError("Invalid summary PCM")
+                    publish(phase="summary", summary_seconds=round(len(pcm) / 48000, 2))
+                    await asyncio.to_thread(sys.stdout.buffer.write, pcm)
+                    await asyncio.to_thread(sys.stdout.buffer.flush)
+                    close_pcm_output()  # Actual pipe EOF, while the Live connection remains open.
+                    publish(phase="draining")
+                    async with asyncio.timeout(len(pcm) / 48000 + 20):
+                        while not args.playback_ack.exists():
+                            await asyncio.sleep(0.1)
+                    ack = json.loads(args.playback_ack.read_text(encoding="utf-8"))
+                    if ack.get("returncode") != 0:
+                        raise RuntimeError("Audio player failed")
+                    ledger.data["playback"] = "aplay_drained"
+                    publish(phase="closing")
+                except Exception as exc:
+                    ledger.data["playback"] = "unconfirmed"
+                    publish(phase="error", error="Summary playback unconfirmed; saved recap is available")
+                    print(f"Summary failed ({type(exc).__name__}); saved recap retained", file=sys.stderr)
+                finally:
+                    ledger.save()
+                    stopping = True
+                    await connection.session.close()
+                    try:
+                        await asyncio.wait_for(closed.wait(), 15)
+                    except TimeoutError:
+                        await connection.close()
 
-            def request_close() -> None:
-                nonlocal close_task
-                if close_task is None:
-                    close_task = asyncio.create_task(close_session())
-
-            await connection.session.start(
-                session={
-                    "model": "gpt-live-1",
-                    "instructions": PROMPT,
-                    "audio": {
-                        "format": {"type": "audio/pcm", "rate": 24000},
-                        "output": {"voice": "marin"},
-                    },
-                    "delegation": {
-                        "type": "responses",
-                        "responses": {"model": "gpt-5.6-luna"},
-                    },
-                },
-                event_id="roast_master_start",
-            )
+            await connection.session.start(session={"model": "gpt-live-1", "instructions": PROMPT,
+                "audio": {"format": {"type": "audio/pcm", "rate": 24000}, "output": {"voice": "marin"}},
+                "delegation": {"type": "responses", "responses": {"model": backend_model,
+                    "instructions": BACKEND_PROMPT, "tools": TOOLS, "parallel_tool_calls": False}}})
             sender = asyncio.create_task(send_audio())
+            finisher = asyncio.create_task(finish())
+            tasks = [sender, finisher, asyncio.create_task(sync_food_reports())]
+            # Background failure must not leave a charged, silent session open.
+            def task_done(task):
+                if not task.cancelled() and task.exception():
+                    asyncio.create_task(connection.close())
+            for task in tasks:
+                task.add_done_callback(task_done)
+            loop.add_signal_handler(signal.SIGINT, finish_requested.set)
+            loop.add_signal_handler(signal.SIGUSR1, finish_requested.set)
             try:
-                async for event in connection:
-                    if event.type == "session.started":
-                        started = True
-                        print("锐评大师已上线。请对 Orange 的麦克风说你吃了什么。", file=sys.stderr)
-                        loop.add_reader(sys.stdin.fileno(), read_stdin)
-                        loop.add_signal_handler(signal.SIGINT, request_close)
-                    elif event.type == "session.output_audio.delta":
-                        audio = base64.b64decode(event.delta)
-                        received_bytes += len(audio)
-                        sys.stdout.buffer.write(audio)
-                        sys.stdout.buffer.flush()
-                    elif event.type in ("session.input_transcript.delta", "session.output_transcript.delta"):
-                        label = "你" if event.type == "session.input_transcript.delta" else "锐评大师"
-                        if label != last_speaker:
-                            print(f"\n{label}: ", end="", file=sys.stderr)
-                            last_speaker = label
-                        print(event.delta, end="", file=sys.stderr, flush=True)
-                    elif event.type == "session.closed":
-                        print(f"\n会话结束；输入 {sent_bytes} 字节，输出 {received_bytes} 字节。", file=sys.stderr)
-                        print(f"用量: {event.usage}", file=sys.stderr)
-                        closed.set()
-                        break
-                    elif event.type == "error":
-                        print(f"API error: {event}", file=sys.stderr)
-                    elif event.type == "session.error":
-                        print(f"Session error: {event}", file=sys.stderr)
+                async with asyncio.timeout(args.max_seconds + 120):
+                    async for event in connection:
+                        kind = event.type
+                        if kind == "session.started":
+                            ready.set()
+                            publish(phase="listening")
+                            loop.add_reader(sys.stdin.fileno(), read_audio)
+                            reader_added = True
+                            loop.call_later(args.max_seconds, finish_requested.set)
+                            print("教练已上线：说食物和份量；A 键结算。", file=sys.stderr, flush=True)
+                        elif kind == "response.event":
+                            await backend.handle(event.event)
+                            if not ending:
+                                publish(phase="thinking" if backend.active else "listening")
+                        elif kind == "session.delegation.created":
+                            backend.active = True
+                            if not ending:
+                                publish(phase="thinking")
+                        elif kind == "session.output_audio.delta" and not ending:
+                            audio = base64.b64decode(event.delta)
+                            output_bytes += len(audio)
+                            sys.stdout.buffer.write(audio)
+                            sys.stdout.buffer.flush()
+                        elif kind in ("session.input_transcript.delta", "session.output_transcript.delta"):
+                            is_input = kind == "session.input_transcript.delta"
+                            if is_input:
+                                last_input = time.monotonic()
+                                transcript_sync.heard(last_input)
+                                if language_task is None:
+                                    first_words.append(event.delta)
+                            if not ending:
+                                publish(phase="listening" if is_input else "speaking")
+                            print(("USER " if is_input else "COACH ") + event.delta, file=sys.stderr, flush=True)
+                        elif kind == "session.closed":
+                            closed.set()
+                            ledger.data["session_finalized"] = True
+                            ledger.save()
+                            publish(phase="done" if ledger.data.get("playback") == "aplay_drained" else "error")
+                            print(f"SESSION_CLOSED input={input_bytes} output={output_bytes}", file=sys.stderr, flush=True)
+                            break
+                        elif kind in ("error", "session.error"):
+                            # Error payloads can contain user data; do not dump them or keys.
+                            backend.failed = True
+                            backend.active = False
+                            print(f"API_ERROR {getattr(getattr(event, 'error', None), 'code', kind)}", file=sys.stderr, flush=True)
+                            if not ready.is_set():
+                                raise RuntimeError("Session startup rejected")
             finally:
-                if started:
+                if reader_added:
                     loop.remove_reader(sys.stdin.fileno())
-                    loop.remove_signal_handler(signal.SIGINT)
-                sender.cancel()
-                await asyncio.gather(sender, return_exceptions=True)
-                if close_task is not None:
-                    await close_task
+                for sig in (signal.SIGINT, signal.SIGUSR1):
+                    loop.remove_signal_handler(sig)
+                if language_task is not None:
+                    tasks.append(language_task)
+                for task in tasks:
+                    task.cancel()
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for result in results:
+                    if isinstance(result, Exception):
+                        raise result
             if not closed.is_set():
-                raise RuntimeError("Connection closed before session.closed")
+                raise RuntimeError("Session finalization unconfirmed")
+            if ledger.data.get("playback") != "aplay_drained":
+                raise RuntimeError("Summary playback unconfirmed")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    folder = LAB_DIR / ".food-coach" / uuid4().hex
+    parser.add_argument("--record", type=Path, default=folder / "record.json")
+    parser.add_argument("--status", type=Path, default=folder / "status.json")
+    parser.add_argument("--playback-ack", type=Path, required=True)
+    parser.add_argument("--max-seconds", type=int, default=180)
+    args = parser.parse_args()
+    try:
+        asyncio.run(run(args))
+    except Exception as exc:
+        atomic_json(args.status, {"phase": "error", "error": type(exc).__name__})
+        print(f"Coach stopped: {type(exc).__name__}; saved records retained", file=sys.stderr)
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except Exception as exc:
-        print(f"锐评大师启动失败: {exc}", file=sys.stderr)
-        raise SystemExit(1) from None
+    main()

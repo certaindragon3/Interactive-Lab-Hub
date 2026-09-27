@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Use Orange's upper Mini PiTFT button (GPIO23) to start/stop GPT-Live.
+"""Use Orange's upper Mini PiTFT button (GPIO23) to start/recap GPT-Live.
 
 Run through run_roast_button.sh, which manages the competing boot display.
 This controller uses the existing Lab 2 GPIO environment. The voice client
@@ -8,19 +8,21 @@ runs in Lab 3's independent environment.
 
 import argparse
 import math
+import json
+import os
+from uuid import uuid4
 import signal
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-import board
-import digitalio
+from food_coach import atomic_json
 
 
 LAB_DIR = Path(__file__).resolve().parent.parent
 CLIENT = LAB_DIR / "speech-scripts" / "roast_master_live.py"
-PYTHON = LAB_DIR / ".venv" / "bin" / "python"
+PYTHON = Path(os.environ.get("COACH_PYTHON", LAB_DIR / ".venv" / "bin" / "python"))
 
 
 def beep(frequency: int, count: int = 1) -> None:
@@ -45,124 +47,156 @@ def beep(frequency: int, count: int = 1) -> None:
 
 
 class VoiceSession:
-    def __init__(self) -> None:
-        self.recorder: subprocess.Popen | None = None
-        self.agent: subprocess.Popen | None = None
-        self.player: subprocess.Popen | None = None
+    def __init__(self):
+        self.recorder = self.agent = self.player = None
+        self.ending = False
+        self.folder = None
+        self.last_state = {"phase": "idle"}
 
     @property
-    def running(self) -> bool:
+    def running(self):
         return self.agent is not None and self.agent.poll() is None
 
-    def start(self, max_seconds: int) -> None:
+    def state(self):
+        if self.folder and (self.folder / "status.json").exists():
+            self.last_state = json.loads((self.folder / "status.json").read_text(encoding="utf-8"))
+        result = dict(self.last_state)
+        if result.get("phase") == "speaking" and time.time() - result.get("updated_at", 0) > 2:
+            result["phase"] = "listening"
+        return result
+
+    def start(self, max_seconds):
         if not PYTHON.is_file():
             raise RuntimeError(f"Missing Lab 3 environment: {PYTHON}")
+        self.folder = LAB_DIR / ".food-coach" / uuid4().hex
+        self.folder.mkdir(parents=True, mode=0o700)
+        self.ending = False
+        self.last_state = {"phase": "connecting"}
+        atomic_json(self.folder / "status.json", self.last_state)
         beep(880)
         self.recorder = subprocess.Popen(
-            ["arecord", "-q", "-D", "default", "-t", "raw", "-f", "S16_LE",
-             "-r", "24000", "-c", "1"],
-            stdout=subprocess.PIPE, start_new_session=True,
-        )
-        assert self.recorder.stdout is not None
+            ["arecord", "-q", "-D", "default", "-t", "raw", "-f", "S16_LE", "-r", "24000", "-c", "1"],
+            stdout=subprocess.PIPE, start_new_session=True)
         try:
-            self.agent = subprocess.Popen(
-                [str(PYTHON), "-u", str(CLIENT)],
-                stdin=self.recorder.stdout, stdout=subprocess.PIPE,
-                start_new_session=True,
-            )
+            self.agent = subprocess.Popen([str(PYTHON), "-u", str(CLIENT),
+                "--record", str(self.folder / "record.json"), "--status", str(self.folder / "status.json"),
+                "--playback-ack", str(self.folder / "playback.json"), "--max-seconds", str(max_seconds)],
+                stdin=self.recorder.stdout, stdout=subprocess.PIPE, start_new_session=True)
             self.recorder.stdout.close()
-            assert self.agent.stdout is not None
             self.player = subprocess.Popen(
-                ["aplay", "-q", "-D", "default", "-t", "raw", "-f", "S16_LE",
-                 "-r", "24000", "-c", "1"],
-                stdin=self.agent.stdout, start_new_session=True,
-            )
+                ["aplay", "-q", "-D", "default", "-t", "raw", "-f", "S16_LE", "-r", "24000", "-c", "1"],
+                stdin=self.agent.stdout, start_new_session=True)
             self.agent.stdout.close()
         except BaseException:
-            self.stop()
+            self.cleanup()
             raise
-        print(f"已按 A 开始；再按 A 停止。最长运行 {max_seconds} 秒。", flush=True)
+        print(f"A: recap then finish. Check-in limit {max_seconds}s. Record: {self.folder}", flush=True)
 
-    def stop(self) -> None:
-        recorder, agent, player = self.recorder, self.agent, self.player
+    def finish(self):
+        if not self.ending and self.running:
+            self.ending = True
+            print("END_BUTTON: preparing saved food recap", flush=True)
+            # EOF requests reconciliation, NOT session.close. Keep speaker alive.
+            if self.recorder and self.recorder.poll() is None:
+                self.recorder.terminate()
+
+    def poll(self):
+        state = self.state()
+        if state.get("phase") in ("finalizing", "synthesizing", "summary", "draining", "closing"):
+            self.finish()
+        if self.player and self.player.poll() is not None:
+            if state.get("phase") == "draining":
+                atomic_json(self.folder / "playback.json", {"returncode": self.player.returncode})
+            elif self.running and not self.ending:
+                self.finish()
+        if self.recorder and self.recorder.poll() is not None and self.running and not self.ending:
+            self.finish()
+        return state
+
+    def cleanup(self):
+        for proc in (self.recorder, self.agent, self.player):
+            if proc is None:
+                continue
+            if proc.poll() is None:
+                proc.terminate()
+            try:
+                proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
         self.recorder = self.agent = self.player = None
-        if recorder is not None and recorder.poll() is None:
-            recorder.terminate()  # EOF lets the API client close its session.
-        if recorder is not None:
-            try:
-                recorder.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                recorder.kill()
-                recorder.wait()
-        if agent is not None:
-            try:
-                agent.wait(timeout=20)
-            except subprocess.TimeoutExpired:
-                agent.terminate()
-                try:
-                    agent.wait(timeout=3)
-                except subprocess.TimeoutExpired:
-                    agent.kill()
-                    agent.wait()
-        if player is not None:
-            try:
-                player.wait(timeout=4)
-            except subprocess.TimeoutExpired:
-                player.terminate()
-                player.wait()
-        if agent is not None:
-            print(f"语音会话已停止（客户端退出码 {agent.returncode}）。", flush=True)
-            beep(440, 2)
 
 
-def main() -> None:
+def main():
+    import board
+    import digitalio
+    from coach_display import Display
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--max-seconds", type=int, default=180)
+    parser.add_argument("--run-seconds", type=int, default=0, help="Exit controller after a bounded hardware test")
     args = parser.parse_args()
     if not 10 <= args.max_seconds <= 180:
         parser.error("--max-seconds must be between 10 and 180")
-
-    button = digitalio.DigitalInOut(board.D23)
-    button.switch_to_input(pull=digitalio.Pull.UP)
     session = VoiceSession()
-    started_at: float | None = None
-    raw = button.value
-    stable = raw
-    changed_at = time.monotonic()
-    print("按 Orange 上方 A 键开始；再次按 A 键停止。Ctrl+C 退出。", flush=True)
+    button = digitalio.DigitalInOut(board.D23)
+    display = None
+    exit_requested = False
+    def request_exit(*_):
+        nonlocal exit_requested
+        exit_requested = True
+    signal.signal(signal.SIGINT, request_exit)
+    signal.signal(signal.SIGTERM, request_exit)
     try:
+        button.switch_to_input(pull=digitalio.Pull.UP)
+        display = Display()
+        raw = stable = button.value
+        changed_at = began = time.monotonic()
+        last_draw = 0
+        end_deadline = None
+        print("READY: upper A starts; A again recaps then closes. Ctrl+C exits.", flush=True)
         while True:
             now = time.monotonic()
+            if args.run_seconds and now - began >= args.run_seconds:
+                exit_requested = True
+            if exit_requested:
+                session.finish()
+                if not session.running:
+                    break
             current = button.value
             if current != raw:
-                raw = current
-                changed_at = now
+                raw, changed_at = current, now
             if current != stable and now - changed_at >= 0.06:
                 stable = current
-                if not stable:  # active-low press; one action per press
+                if not stable and not exit_requested:
+                    print("BUTTON_A", flush=True)
                     if session.running:
-                        session.stop()
-                        started_at = None
+                        session.finish()
                     else:
-                        session.stop()  # clear any failed prior process
+                        session.cleanup()
                         session.start(args.max_seconds)
-                        started_at = now
+                        end_deadline = None
+            state = session.poll()
+            if session.ending and end_deadline is None:
+                end_deadline = now + 120
+            if end_deadline and now > end_deadline and session.running:
+                print("Ending timed out; recap delivery unconfirmed", flush=True)
+                session.cleanup()
+                session.last_state = {"phase": "error"}
+                atomic_json(session.folder / "status.json", session.last_state)
             if session.agent is not None and not session.running:
-                print("客户端自行退出；请查看上面的错误。", flush=True)
-                session.stop()
-                started_at = None
-            if session.running and started_at is not None and now - started_at >= args.max_seconds:
-                print("达到会话时间上限，自动停止。", flush=True)
-                session.stop()
-                started_at = None
+                print(f"CLIENT_EXIT {session.agent.returncode}", flush=True)
+                session.cleanup()
+                beep(440, 2)
+            if now - last_draw > 0.1:
+                display.show(state)
+                last_draw = now
             time.sleep(0.02)
     finally:
-        session.stop()
+        session.cleanup()
         button.deinit()
+        if display:
+            display.close()
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\n已退出。", file=sys.stderr)
+    main()
