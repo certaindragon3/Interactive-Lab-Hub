@@ -331,6 +331,18 @@ For Part 2, you will redesign the interaction with the speech-enabled device usi
 >
 > A revised storyboard should show the button-to-summary ending and, separately, the optional camera path.
 
+> **Revised interaction script (implemented version).** This keeps the broccoli → cake → fried chicken progression from Part 1, but gives the check-in a definite ending. The lines below are performance cues, not a fixed transcript; the coach improvises in English.
+>
+> | Beat | User / control | Coach and display |
+> | --- | --- | --- |
+> | Start | Press the upper A button and report broccoli. | Enter the listening state. Respond with specific encouragement and ask for a portion if it is missing. |
+> | Clarify | Give the amount, such as one bowl. | Save the entry in the background; show the green smile without reading out the bookkeeping. Leave room for the next food. |
+> | Complicate | Add cake and its portion. | Shift to a yellow raised eyebrow. Make a dry joke that refers back to the broccoli, rather than delivering an unrelated insult. |
+> | Escalate | Add fried chicken; clarify or correct an amount when needed. | Shift to a red glare and build on the earlier foods. The user can interrupt the speech. The exact one-second stare from the acted script is not enforced. |
+> | Finish | Press A again. | Stop accepting new microphone input, reconcile the food record, then speak the food recap, stored score and a humorous sign-off. Keep the recap screen visible while the audio finishes. |
+>
+> **Timing and wording changes.** A roughly 1.2-second pause in transcript activity schedules background bookkeeping; it is not a scripted dramatic pause or proof that the user has finished a sentence. Later speech can clarify the same entry. Listening/saving/speaking labels explain activity independently of the face's mood. The ending waits for record reconciliation and speech synthesis, so its delay still needs to be evaluated with new users. Camera input remains a separate future extension.
+
 ## Prototype your system
 
 The system should:
@@ -356,6 +368,19 @@ The system should:
 >
 > **Implementation and run instructions:** [Food coach](FOOD_COACH.md) · [Application ledger and rubric](speech-scripts/food_coach.py) · [Live client](speech-scripts/roast_master_live.py) · [Button controller](speech-scripts/roast_button.py).
 >
+> **Device demonstration — normal scripted flow (2026-09-27).** This 1:47 recording shows the working Raspberry Pi, its button/screen controller and the external speaker during one rehearsed check-in. I report broccoli, clarify it as a bowl, then add two slices of chocolate fudge cake and fried chicken. The coach asks about the broccoli portion, moves from encouragement to jokes that recall the earlier foods, and finishes with the three food names, **45 points** and a humorous sign-off. The display changes from green to yellow to red and shows the recap at the end.
+>
+> [Watch or download the complete demonstration](assets/video/part2-food-coach-demo-2026-09-27.mp4) · 1:47 · original timing and audio retained.
+>
+> | Approximate time | What to look for |
+> | --- | --- |
+> | 0:00–0:29 | Broccoli report, portion question, clarification and encouragement. |
+> | 0:29–0:52 | Chocolate fudge cake and two slices; the joke refers back to the broccoli. |
+> | 0:52–1:21 | Fried chicken and a stronger, contextual roast; the face turns red. |
+> | 1:21–1:47 | Transition to the ending, food recap, 45-point result and humorous sign-off. |
+>
+> This demonstrates the normal rehearsed path, not a study with unfamiliar participants. It does not independently verify the saved JSON record, every correction/interruption case, or the return to idle after playback; those require separate checks. The original MOV is preserved locally, and the MP4 is a portrait H.264/SDR copy for web playback.
+>
 > **Author trial and iteration.** The first real button-and-microphone trial completed the saved-record and playback loop, but I found the coach too mechanical: it did not feel like a conversation. In the second trial I liked the revised character, which restored encouragement and sharper menu jokes, but the ending still sounded mechanical. That trial also exposed missed bookkeeping during the conversation. The next changes move routine record updates to an app-triggered background pass and replace formal closing labels with a short food recap, the stored score and a contextual punchline. Personality quality is assessed by listening, not proved by unit tests.
 >
 > **Verification status.** Targeted automated tests cover persistence, unknown portions, corrections, duplicate calls, backend tool continuation and the end-button playback handshake. Current device and API results are recorded in [the verification note](test-evidence/food-coach-2026-09-27.md). Automated synthetic speech is not participant testing. Camera recognition and the two-person usability study remain unfinished.
@@ -368,17 +393,27 @@ Try to get at least two people to interact with your system. (Ideally, you would
 
 Answer the following:
 
+> **Study status.** The observations below come from my own development trials and the scripted demonstration above. Testing with at least two other people is still pending; I will add their observations separately.
+
 ### What worked well about the system and what didn't?
-\*\**your answer here*\*\*
+> In the recorded run, the coach connected its responses across foods: broccoli received encouragement, cake changed the tone, and fried chicken prompted a stronger joke about the same meal. The final recap named all three foods and gave a definite result. That continuity supports the intended character better than separate confirmations after every item.
+>
+> Earlier trials exposed two problems: the voice could sound like a form being filled out, and lively conversation did not guarantee that foods were being saved during the check-in. I separated background logging from the spoken performance and shortened the closing into a recap plus a joke. The new recording shows one successful path, but does not establish whether unfamiliar users find the humor supportive, understand the score, or know how to correct a mistake.
 
 ### What worked well about the controller and what didn't?
-\*\**your answer here*\*\*
+> The same physical A button provides a start and an explicit request to finish. The small screen can show the coach's changing expression while its activity label explains whether the system is listening, saving or delivering the recap. This lets the spoken response stay conversational instead of narrating every internal step.
+>
+> The ending is not instantaneous: the app has to reconcile the record and prepare the spoken recap. The demonstration also shows how small the screen text is compared with the face. I still need to test whether a new user notices the state cue, understands that another press starts the ending, and waits for the recap rather than assuming the device has stopped responding.
 
 ### What lessons can you take away from the WoZ interactions for designing a more autonomous version of the system?
-\*\**your answer here*\*\*
+> A human wizard can keep the food list in mind, choose when to ask a question and land a joke at the right moment. Those abilities have to be made explicit in an autonomous version. The application now owns the food record, duplicate/correction rules, numerical score and finishing sequence, while the voice model handles the character and conversational wording. The missed logging in an early trial showed why a convincing spoken response is not evidence that the underlying task was completed.
+>
+> The acted version's exact pause and interruption timing are still design targets, not guaranteed behavior. Future trials should include an interruption, an ambiguous portion, a correction and an early end press, as well as the normal script. I would compare both task completion and whether the user still feels encouraged after the roast.
 
 ### How could you use your system to create a dataset of interaction? What other sensing modalities would make sense to capture?
-\*\**your answer here*\*\*
+> The current application already keeps a private per-check-in record of foods, portions, corrections, tool results, the scoring rubric and the final recap status. With participants' agreement, a study could add timestamped turns, button presses and display states, plus annotations for clarification, interruption, logging mistakes, waiting time and reactions to the humor. A useful unit would be a user food report paired with the resulting ledger change and coach response; this would reveal cases where the conversation sounds correct but the record is wrong. The current app does not retain raw microphone recordings.
+>
+> A camera could capture a dish as an additional food/portion cue, but the user should confirm its interpretation before it enters the record. For studying the interaction itself, a consented recording of the device and participant could help relate visible hesitation or laughter to a particular response; those reactions should be annotated rather than inferred automatically from a face. Neither camera recognition nor this participant dataset has been implemented.
 
 <details>
   <summary><strong>Submission Cleanup Reminder (Click to Expand)</strong></summary>
