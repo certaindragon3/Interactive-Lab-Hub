@@ -323,6 +323,14 @@ For Part 2, you will redesign the interaction with the speech-enabled device usi
 3. Make a new storyboard, diagram and/or script based on these reflections.
 4. (optional) Integrate [input devices](inputs.md) in the system
 
+> **Part 2 design direction (planned).** The acting exercise suggests that the check-in needs a clear result at the end, not just a final joke.
+>
+> 1. **Score and finish.** Each food report would call `log_food` with the item and portion, asking when the portion is unclear. App code would use a fixed, explainable rubric to update a score stored in the backend; corrections would replace an entry rather than count it twice. Pressing the top button would trigger a short food recap and the stored score before closing the session. This would be a real computed score for the reported foods, not a medical measure of health.
+> 2. **Show the interaction state.** The face would still convey the coach's comic mood, while an LED or small screen cue would distinguish listening, thinking, and speaking. The score could update behind the scenes and appear at the end as a reveal.
+> 3. **Optional camera input.** The user could choose to show a dish to the camera. The coach would confirm the suggested food and portion before logging it through the same tool. We would add this after the spoken scoring loop works; image recognition is not yet implemented.
+>
+> A revised storyboard should show the button-to-summary ending and, separately, the optional camera path.
+
 ## Prototype your system
 
 The system should:
