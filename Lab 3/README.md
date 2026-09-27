@@ -370,6 +370,8 @@ The system should:
 >
 > **Device demonstration — normal scripted flow (2026-09-27).** This 1:47 recording shows the working Raspberry Pi, its button/screen controller and the external speaker during one rehearsed check-in. I report broccoli, clarify it as a bowl, then add two slices of chocolate fudge cake and fried chicken. The coach asks about the broccoli portion, moves from encouragement to jokes that recall the earlier foods, and finishes with the three food names, **45 points** and a humorous sign-off. The display changes from green to yellow to red and shows the recap at the end.
 >
+> https://github.com/user-attachments/assets/35731f0c-e4a3-4d94-a3dc-0379ecad81d9
+>
 > [Watch or download the complete demonstration](assets/video/part2-food-coach-demo-2026-09-27.mp4) · 1:47 · original timing and audio retained.
 >
 > | Approximate time | What to look for |
