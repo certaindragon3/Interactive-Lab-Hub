@@ -17,6 +17,7 @@ from coach_backend import Backend, TranscriptSync
 from coach_language import localize_recap
 from coach_cues import ProcessingCue, processing_tone
 from coach_runtime import Metrics, PCMOutput, SerialWorker, StatusWriter, off_thread
+from coach_greeting import OpeningGreeting
 
 LAB_DIR = Path(__file__).resolve().parent.parent
 PROMPT = """You are Orange, the user's outspoken food coach: an affectionate ally with a viciously sharp wit and strong opinions about the menu. Sound like a person with a point of view, not a customer-service agent, food clerk, or nutrition announcer.
@@ -136,6 +137,15 @@ async def run_session(args, metrics, screen, pcm_output):
             def backend_busy():
                 return backend.active or backend_worker.busy
             transcript_sync = TranscriptSync()
+            greeting = OpeningGreeting()
+
+            async def greet():
+                await ready.wait()
+                if not finish_requested.is_set():
+                    greeting_started = time.monotonic()
+                    metrics.last["greeting_requested"] = greeting_started
+                    await greeting.request(connection)
+                    metrics.maximum("greeting_ack_ms", (time.monotonic() - greeting_started) * 1000)
 
             async def send_audio():
                 nonlocal pending_byte
@@ -268,7 +278,7 @@ async def run_session(args, metrics, screen, pcm_output):
                     "instructions": BACKEND_PROMPT, "tools": TOOLS, "parallel_tool_calls": False}}})
             sender = asyncio.create_task(send_audio())
             finisher = asyncio.create_task(finish())
-            tasks = [sender, finisher, asyncio.create_task(sync_food_reports()), asyncio.create_task(activity_cues()), backend_worker.task]
+            tasks = [sender, finisher, asyncio.create_task(sync_food_reports()), asyncio.create_task(activity_cues()), asyncio.create_task(greet()), backend_worker.task]
             supervised = tasks + [pcm_output.worker.task, screen.task]
             # Background failure must not leave a charged, silent session open.
             def task_done(task):
@@ -283,12 +293,19 @@ async def run_session(args, metrics, screen, pcm_output):
                     async for event in connection:
                         kind = event.type
                         if kind == "session.started":
-                            ready.set()
-                            publish(phase="listening")
+                            if ready.is_set():
+                                continue  # Duplicate startup must not replay the opening or timer.
+                            ready.set()  # Release continuous microphone/silence PCM immediately.
+                            publish(phase="connecting", greeting="requested")
                             loop.add_reader(sys.stdin.fileno(), read_audio)
                             reader_added = True
                             loop.call_later(args.max_seconds, finish_requested.set)
-                            print("教练已上线：说食物和份量；A 键结算。", file=sys.stderr, flush=True)
+                            print("Coach connected; requesting opening greeting.", file=sys.stderr, flush=True)
+                        elif greeting.handle(event):
+                            publish(greeting="accepted")
+                            if screen.state["phase"] == "connecting":
+                                publish(phase="listening")
+                            print("Opening instructions accepted; A ends the check-in.", file=sys.stderr, flush=True)
                         elif kind == "response.event":
                             if event.event["type"] in {"response.created", "response.output_item.done",
                                     "response.completed", "response.failed", "response.incomplete", "response.cancelled"}:
@@ -308,6 +325,10 @@ async def run_session(args, metrics, screen, pcm_output):
                                 metrics.count("output_chunks_during_backend")
                             if pcm_output.offer(audio):
                                 metrics.count("output_non_silent_chunks")
+                                if not metrics.values.get("input_transcript_fragments") and greeting.requested:
+                                    metrics.count("opening_non_silent_chunks")
+                                    if "opening_first_audio_ms" not in metrics.values:
+                                        metrics.maximum("opening_first_audio_ms", (time.monotonic() - metrics.last["greeting_requested"]) * 1000)
                                 if backend_busy():
                                     metrics.count("output_non_silent_chunks_during_backend")
                         elif kind in ("session.input_transcript.delta", "session.output_transcript.delta"):
