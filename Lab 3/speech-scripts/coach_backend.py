@@ -1,10 +1,16 @@
 """Bridge nested GPT-Live Responses events to the local ledger."""
+import asyncio
 import json
+import time
+
+from coach_runtime import off_thread
 
 
 class Backend:
-    def __init__(self, connection, ledger, changed=lambda result: None):
+    def __init__(self, connection, ledger, changed=lambda result: None, metrics=None):
         self.connection, self.ledger, self.changed = connection, ledger, changed
+        self.metrics = metrics
+        self.ledger_lock = asyncio.Lock()
         self.calls = {}
         self.response_id = None
         self.active = False
@@ -39,12 +45,20 @@ class Backend:
             for item in calls.values():
                 try:
                     args = json.loads(item["arguments"])
-                    result = self.ledger.execute(item["call_id"], item["name"], args)
+                    started = time.monotonic()
+                    async with self.ledger_lock:
+                        result = await off_thread(self.ledger.execute, item["call_id"], item["name"], args)
+                    if self.metrics:
+                        self.metrics.count("tool_calls")
+                        self.metrics.maximum("tool_execute_max_ms", (time.monotonic() - started) * 1000)
                 except (ValueError, TypeError):
                     result = {"ok": False, "error": "Invalid tool arguments"}
                 self.changed(result)
+                started = time.monotonic()
                 await self.connection.response.item.create(item={"type": "function_call_output",
                     "call_id": item["call_id"], "output": json.dumps(result, ensure_ascii=False)})
+                if self.metrics:
+                    self.metrics.maximum("tool_return_max_ms", (time.monotonic() - started) * 1000)
             if calls:
                 await self.connection.response.create()
             else:

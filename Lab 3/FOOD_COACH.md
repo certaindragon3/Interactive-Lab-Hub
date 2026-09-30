@@ -2,6 +2,20 @@
 
 The current prototype uses GPT-Live for English conversation and the existing OpenAI Python SDK's Responses delegation for food tools. The application schedules a background backend pass after about 1.2 seconds without new user transcript fragments; it does not rely on the voice character to remember to delegate. A pause is only a scheduling cue, not proof of a complete utterance. Later fragments and corrections are reconciled using the same entry IDs. `food_coach.py` owns the record and score; the voice and backend models do not choose a numeric score. No Agents SDK, MCP server, camera, or nutrition database is required.
 
+## Audio concurrency and processing feedback
+
+Conversation capture and playback run concurrently: `arecord` feeds the Live sender while a separate `aplay` process drains the output. GPT-Live supports full duplex. Pressing A to finish intentionally stops microphone capture and switches to the finite recap; that ending is not an interactive full-duplex phase.
+
+The earlier client nevertheless had local blocking paths: its WebSocket receiver awaited food-tool processing and result transmission, wrote PCM synchronously to the speaker pipe, and fsynced screen state on every transcript fragment. Full-duplex transport alone did not isolate speech from that work. The client now dispatches ordered tool events to a serial worker, runs ledger writes off the event loop under a lock, and sends PCM through one ordered worker. The receiver never waits for a ledger write, a tool result send, or speaker backpressure. All recap PCM uses that same writer before the existing EOF/player-acknowledgment handshake.
+
+PCM queued by the application is capped at four seconds, without an additional startup prebuffer. Overflow fails explicitly instead of silently dropping spoken words or accumulating unbounded delay. This cap does not measure buffering inside ALSA or the device. The screen writer coalesces updates at about 10 Hz off the audio loop. Hot-path transcript/food-result terminal printing has been removed; the private ledger remains the record of saved food.
+
+The screen shows a cyan LISTENING label or violet SPEAKING label, with a separate amber SAVING label and elapsed seconds when bookkeeping overlaps conversation. It says “You can keep talking.” Processing lasting more than 1.2 seconds can emit one short, quiet double tone, with a five-second cooldown and a speech guard. That cue goes through the existing PCM writer, not another player. Output PCM energy distinguishes voice activity from Live's continuous silent PCM; the label and sound guard are conservative activity estimates, not proof of playback completion or echo cancellation. See [status cue details](COACH_STATUS_CUES.md).
+
+Each private `status.json` includes `audio_diagnostics`: input queue/drops, maximum send and receive gaps, PCM queue/write latency, tool execution/result-send latency, event-loop lag, non-silent output received during backend activity, and processing-cue count. These contain counts and timings, not transcripts or audio. Missing counters mean that event has not been observed. Gap maxima alone cannot establish network loss or audible stuttering; startup, expected silence, speaker buffering, model decisions and acoustic feedback need separate evidence.
+
+On September 30, the connected device used a USB microphone and USB speaker. No explicitly configured software echo-cancellation module was found in its PulseAudio-compatible module list. That leaves speaker-to-microphone feedback as an unverified explanation for unintended interruption. The application does not mute the microphone while speaking, because that would remove barge-in. Synthetic/null-device tests do not validate acoustic echo, hardware audibility, or interruption quality.
+
 ## Interaction
 
 1. Press the upper **A button (GPIO23)** to start. A beep acknowledges the press; the screen moves from CONNECTING to LISTENING.
@@ -53,7 +67,7 @@ Every check-in is initialized with `language=en`; there is no first-utterance la
 
 The existing ignored `Lab 3/.env` supplies the API key. Do not put keys in source or logs. `COACH_PYTHON`, `COACH_HARDWARE_PYTHON` and `COACH_ENV_FILE` allow testing in an isolated deployment directory while reusing the existing environments and credential file. `COACH_BACKEND_MODEL` overrides the existing `gpt-5.6-luna` backend when explicitly testing another supported model.
 
-Private records live in `Lab 3/.food-coach/<session-id>/record.json`, with status and playback acknowledgment files alongside them. Records are written atomically in UTF-8 with mode 0600, retain the rubric, computed snapshot, tool-call results, summary and delivery/finalization status, and are ignored by Git. Food tool output and transcript fragments are also printed to the local terminal; keep redirected logs private. Raw microphone recordings are not retained by this application.
+Private records live in `Lab 3/.food-coach/<session-id>/record.json`, with status and playback acknowledgment files alongside them. Records are written atomically in UTF-8 with mode 0600, retain the rubric, computed snapshot, tool-call results, summary and delivery/finalization status, and are ignored by Git. Operational errors and the ending summary may appear in the local terminal; keep redirected logs private. Routine food results and transcript fragments are no longer printed from the audio hot path. Raw microphone recordings are not retained by this application.
 
 ## Verification commands
 

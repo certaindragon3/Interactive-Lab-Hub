@@ -1,6 +1,14 @@
-"""One expressive face plus a separate, neutral interaction-state label."""
+"""Coach mood and high-contrast activity labels have separate visual roles."""
 import math
 import time
+
+
+STATE_COLORS = {
+    "idle": "#a0b4cc", "connecting": "#ffb84a", "listening": "#37d7fa",
+    "thinking": "#ffb84a", "speaking": "#ba9cff", "finalizing": "#ffb84a",
+    "synthesizing": "#ba9cff", "summary": "#ba9cff", "draining": "#ba9cff",
+    "closing": "#ffb84a", "done": "#64dc94", "error": "#ff7676",
+}
 
 
 def render(state, now=None):
@@ -8,7 +16,12 @@ def render(state, now=None):
     now = time.monotonic() if now is None else now
     image = Image.new("RGB", (240, 135), "#11131a")
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+        small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
+    except OSError:
+        font = ImageFont.load_default(size=14)
+        small = ImageFont.load_default(size=11)
     mood, phase = state.get("mood", "neutral"), state.get("phase", "idle")
     color = {"smile": "#64dc94", "wry": "#f3ca62", "glare": "#ef736c"}.get(mood, "#a0b4cc")
     offset = round(math.sin(now * 5) * 3) if mood == "smile" else 0
@@ -29,11 +42,22 @@ def render(state, now=None):
     labels = {"idle": "READY", "connecting": "CONNECTING", "listening": "LISTENING", "thinking": "SAVING",
               "speaking": "SPEAKING", "finalizing": "CHECKING", "synthesizing": "RECAP", "summary": "RECAP",
               "draining": "RECAP", "closing": "CLOSING", "done": "SAVED", "error": "CHECK LOG"}
-    draw.text((106, 24), labels.get(phase, phase.upper()), font=font, fill="white")
+    activity_color = STATE_COLORS.get(phase, "#a0b4cc")
+    draw.rounded_rectangle((101, 17, 237, 43), radius=5, fill=activity_color)
+    draw.text((106, 22), labels.get(phase, phase.upper()), font=font, fill="#11131a")
+    busy = bool(state.get("backend_busy"))
+    elapsed = state.get("backend_elapsed", 0) if busy else state.get("phase_elapsed", 0)
+    if busy:
+        draw.rounded_rectangle((101, 47, 237, 66), radius=4, fill=STATE_COLORS["thinking"])
+        draw.text((106, 49), "SAVING  " + str(elapsed) + "s", font=small, fill="#11131a")
+        if phase in ("listening", "speaking", "thinking"):
+            draw.text((106, 94), "You can keep talking", font=small, fill="#dbe4ef")
+    elif phase in ("connecting", "thinking", "finalizing", "synthesizing", "closing"):
+        draw.text((106, 49), "Please wait  " + str(elapsed) + "s", font=small, fill=activity_color)
     # This cue is an activity indicator, never a health/score color.
     for i in range(5):
-        height = 5 + int(8 * abs(math.sin(now * 4 + i))) if phase in ("speaking", "summary", "draining") else 5
-        draw.rectangle((109+i*13, 68-height, 114+i*13, 68+height), fill="#c2c9d3")
+        height = 5 + int(5 * abs(math.sin(now * 4 + i))) if phase in ("speaking", "summary", "draining") else (7 if (busy or phase in ("connecting", "thinking", "finalizing", "synthesizing", "closing")) and i == int(now * 3) % 5 else 3)
+        draw.rectangle((109+i*13, 79-height, 114+i*13, 79+height), fill=activity_color)
     if phase in ("summary", "draining", "closing", "done", "error"):
         score = state.get("score")
         draw.text((106, 85), "Game: " + (str(score) if score is not None else "--"), font=font, fill="white")

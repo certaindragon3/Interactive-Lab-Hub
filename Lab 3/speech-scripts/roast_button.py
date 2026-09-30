@@ -25,6 +25,28 @@ CLIENT = LAB_DIR / "speech-scripts" / "roast_master_live.py"
 PYTHON = Path(os.environ.get("COACH_PYTHON", LAB_DIR / ".venv" / "bin" / "python"))
 
 
+class StatusTiming:
+    """Monotonic elapsed activity labels are honest wait cues, not progress."""
+    def __init__(self):
+        self.phase = None
+        self.phase_since = None
+        self.busy_since = None
+
+    def update(self, state, now):
+        result = dict(state)
+        phase = state.get("phase", "idle")
+        if phase != self.phase:
+            self.phase, self.phase_since = phase, now
+        busy = bool(state.get("backend_busy"))
+        if busy and self.busy_since is None:
+            self.busy_since = now
+        elif not busy:
+            self.busy_since = None
+        result["phase_elapsed"] = max(0, int(now - self.phase_since))
+        result["backend_elapsed"] = max(0, int(now - self.busy_since)) if busy else 0
+        return result
+
+
 def beep(frequency: int, count: int = 1) -> None:
     """A short audible acknowledgment before audio starts or after it stops."""
     rate = 24000
@@ -138,6 +160,7 @@ def main():
     if not 10 <= args.max_seconds <= 180:
         parser.error("--max-seconds must be between 10 and 180")
     session = VoiceSession()
+    status_timing = StatusTiming()
     button = digitalio.DigitalInOut(board.D23)
     display = None
     exit_requested = False
@@ -188,7 +211,7 @@ def main():
                 session.cleanup()
                 beep(440, 2)
             if now - last_draw > 0.1:
-                display.show(state)
+                display.show(status_timing.update(state, now))
                 last_draw = now
             time.sleep(0.02)
     finally:

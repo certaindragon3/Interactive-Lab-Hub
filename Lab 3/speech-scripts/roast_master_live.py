@@ -15,6 +15,8 @@ from uuid import uuid4
 from food_coach import BACKEND_PROMPT, TOOLS, Ledger, atomic_json
 from coach_backend import Backend, TranscriptSync
 from coach_language import localize_recap
+from coach_cues import ProcessingCue, processing_tone
+from coach_runtime import Metrics, PCMOutput, SerialWorker, StatusWriter, off_thread
 
 LAB_DIR = Path(__file__).resolve().parent.parent
 PROMPT = """LANGUAGE RULE (takes precedence over the language of these instructions and examples): Always speak English, from the very first response through praise, roasts, questions and the goodbye. The conversation language is fixed to English for every check-in. Understand user input in other languages, but do not switch your output language, even when the first utterance is not English. Translate the character/style guidance below into English; Chinese examples do NOT prescribe Chinese output.
@@ -57,6 +59,19 @@ def close_pcm_output():
 
 
 async def run(args):
+    metrics = Metrics()
+    screen = StatusWriter(args.status, metrics)
+    audio = PCMOutput(sys.stdout.buffer, metrics)
+    try:
+        await run_session(args, metrics, screen, audio)
+    finally:
+        try:
+            await audio.worker.stop()
+        finally:
+            await screen.close()
+
+
+async def run_session(args, metrics, screen, pcm_output):
     from openai import AsyncOpenAI
     load_key()
     ledger = Ledger(args.record)
@@ -75,12 +90,8 @@ async def run(args):
     backend_model = os.environ.get("COACH_BACKEND_MODEL", "gpt-5.6-luna")
     last_input = time.monotonic()
     input_bytes = output_bytes = 0
-    status = {"phase": "connecting", "mood": "neutral", "score": None, "language": language}
-
-    def publish(**updates):
-        status.update(updates)
-        status["updated_at"] = time.time()
-        atomic_json(args.status, status)
+    publish = screen.publish
+    publish(phase="connecting", mood="neutral", score=None, language=language, backend_busy=False)
 
     def read_audio():
         nonlocal reader_added, input_bytes
@@ -92,8 +103,10 @@ async def run(args):
         else:
             input_bytes += len(chunk)
             if chunks.full():
-                chunks.get_nowait()
+                dropped = chunks.get_nowait()
+                metrics.count("input_dropped_bytes", len(dropped))
             chunks.put_nowait(chunk)
+            metrics.maximum("input_queued_chunks_max", chunks.qsize())
 
     def changed(result):
         if result.get("ok"):
@@ -101,12 +114,23 @@ async def run(args):
             category = entries[-1]["category"] if entries else "other"
             mood = "glare" if category == "fried" else "wry" if category == "dessert" else "smile" if category in ("vegetable", "fruit") else "neutral"
             publish(mood=mood, score=result.get("score"), pending=result.get("pending_portions", 0))
-        print("FOOD_TOOL " + json.dumps(result, ensure_ascii=False), file=sys.stderr, flush=True)
+        # Food details are already persisted in the private ledger. Avoid terminal I/O
+        # in the receiver or tool callback; a slow terminal must not stall speech.
 
     publish()
     async with AsyncOpenAI(timeout=25, max_retries=1) as client:
         async with client.live.connect(max_retries=0) as connection:
-            backend = Backend(connection, ledger, changed)
+            backend = Backend(connection, ledger, changed, metrics)
+
+            async def handle_backend(event):
+                await backend.handle(event)
+                if not ending:
+                    publish(backend_busy=backend.active)
+
+            backend_worker = SerialWorker(handle_backend)
+
+            def backend_busy():
+                return backend.active or backend_worker.busy
             transcript_sync = TranscriptSync()
 
             async def send_audio():
@@ -122,16 +146,36 @@ async def run(args):
                     size = len(chunk) - len(chunk) % 2
                     pending_byte = chunk[size:]
                     if size:
+                        metrics.interval("input_send_gap")
+                        started = time.monotonic()
                         await connection.session.input_audio.append(audio=base64.b64encode(chunk[:size]).decode())
+                        metrics.maximum("input_send_max_ms", (time.monotonic() - started) * 1000)
+
+            async def activity_cues():
+                await ready.wait()
+                cue = ProcessingCue()
+                tone = processing_tone()
+                while not stopping:
+                    playing = pcm_output.playing
+                    publish(audio_playing=playing)
+                    if not ending:
+                        publish(phase="speaking" if playing else "listening")
+                    state = dict(screen.state)
+                    # No cue may follow PCM EOF or compete with the finite recap.
+                    if state.get("phase") not in {"summary", "draining", "closing", "done", "error"}:
+                        if cue.update(state, time.monotonic()):
+                            pcm_output.offer(tone)
+                            metrics.count("processing_cues")
+                    await asyncio.sleep(0.1)
 
             async def sync_food_reports():
                 await ready.wait()
                 while not stopping:
                     await asyncio.sleep(0.1)
-                    if transcript_sync.due(time.monotonic(), backend.active, ending or finish_requested.is_set()):
+                    if transcript_sync.due(time.monotonic(), backend_busy(), ending or finish_requested.is_set()):
                         transcript_sync.dispatched()
                         backend.active = True
-                        publish(phase="thinking")
+                        publish(backend_busy=True)
                         await connection.response.item.create(item={"type": "message", "role": "user", "content": [
                             {"type": "input_text", "text": "[APPLICATION BACKGROUND SYNC] Check recent USER speech in the conversation and maintain the food log now. A pause may be mid-sentence: do not invent missing details or treat jokes/hypotheticals as food. Reuse existing IDs; save new food once, apply corrections/removals, and keep unclear portions null. This is background bookkeeping, not a request to repeat a confirmation or score aloud. If nothing changed, finish without changing records."}]})
                         await connection.response.create()
@@ -151,11 +195,11 @@ async def run(args):
                     settle_started = time.monotonic()
                     deadline = settle_started + 8
                     while time.monotonic() < deadline:
-                        if chunks.empty() and time.monotonic() - max(last_input, settle_started) > 1.5 and not backend.active:
+                        if chunks.empty() and time.monotonic() - max(last_input, settle_started) > 1.5 and not backend_busy():
                             break
                         await asyncio.sleep(0.1)
                     async with asyncio.timeout(25):
-                        while backend.active:
+                        while backend_busy():
                             await asyncio.sleep(0.1)
                         count = backend.completed
                         backend.failed = False
@@ -168,11 +212,17 @@ async def run(args):
                         reconciled = not backend.failed
                 except (TimeoutError, OSError):
                     print("Final reconciliation incomplete; retaining saved entries", file=sys.stderr)
-                ledger.freeze(reconciled)
+                # Drain queued tool events before freezing. The lock also protects against
+                # a late delegated call while the ending is being prepared.
+                async with asyncio.timeout(30):
+                    await backend_worker.drain()
+                async with backend.ledger_lock:
+                    await off_thread(ledger.freeze, reconciled)
                 summary = await localize_recap(client, backend_model, ledger, language, reconciled)
                 ledger.data["summary"] = summary
-                ledger.save()
-                publish(phase="synthesizing", score=ledger.snapshot()["score"], summary=summary)
+                async with backend.ledger_lock:
+                    await off_thread(ledger.save)
+                publish(phase="synthesizing", backend_busy=False, score=ledger.snapshot()["score"], summary=summary)
                 print("SUMMARY " + summary, file=sys.stderr, flush=True)
                 try:
                     # Known text and finite PCM: unlike Live, this has an actual EOF.
@@ -183,8 +233,7 @@ async def run(args):
                     if not pcm or len(pcm) % 2:
                         raise RuntimeError("Invalid summary PCM")
                     publish(phase="summary", summary_seconds=round(len(pcm) / 48000, 2))
-                    await asyncio.to_thread(sys.stdout.buffer.write, pcm)
-                    await asyncio.to_thread(sys.stdout.buffer.flush)
+                    await pcm_output.recap(pcm)
                     close_pcm_output()  # Actual pipe EOF, while the Live connection remains open.
                     publish(phase="draining")
                     async with asyncio.timeout(len(pcm) / 48000 + 20):
@@ -194,13 +243,14 @@ async def run(args):
                     if ack.get("returncode") != 0:
                         raise RuntimeError("Audio player failed")
                     ledger.data["playback"] = "aplay_drained"
-                    publish(phase="closing")
+                    publish(phase="closing", audio_playing=False)
                 except Exception as exc:
                     ledger.data["playback"] = "unconfirmed"
                     publish(phase="error", error="Summary playback unconfirmed; saved recap is available")
                     print(f"Summary failed ({type(exc).__name__}); saved recap retained", file=sys.stderr)
                 finally:
-                    ledger.save()
+                    async with backend.ledger_lock:
+                        await off_thread(ledger.save)
                     stopping = True
                     await connection.session.close()
                     try:
@@ -214,12 +264,13 @@ async def run(args):
                     "instructions": BACKEND_PROMPT, "tools": TOOLS, "parallel_tool_calls": False}}})
             sender = asyncio.create_task(send_audio())
             finisher = asyncio.create_task(finish())
-            tasks = [sender, finisher, asyncio.create_task(sync_food_reports())]
+            tasks = [sender, finisher, asyncio.create_task(sync_food_reports()), asyncio.create_task(activity_cues()), backend_worker.task]
+            supervised = tasks + [pcm_output.worker.task, screen.task]
             # Background failure must not leave a charged, silent session open.
             def task_done(task):
                 if not task.cancelled() and task.exception():
                     asyncio.create_task(connection.close())
-            for task in tasks:
+            for task in supervised:
                 task.add_done_callback(task_done)
             loop.add_signal_handler(signal.SIGINT, finish_requested.set)
             loop.add_signal_handler(signal.SIGUSR1, finish_requested.set)
@@ -235,18 +286,26 @@ async def run(args):
                             loop.call_later(args.max_seconds, finish_requested.set)
                             print("教练已上线：说食物和份量；A 键结算。", file=sys.stderr, flush=True)
                         elif kind == "response.event":
-                            await backend.handle(event.event)
-                            if not ending:
-                                publish(phase="thinking" if backend.active else "listening")
+                            if event.event["type"] in {"response.created", "response.output_item.done",
+                                    "response.completed", "response.failed", "response.incomplete", "response.cancelled"}:
+                                if event.event["type"] == "response.created":
+                                    publish(backend_busy=True)
+                                backend_worker.submit(event.event)
                         elif kind == "session.delegation.created":
                             backend.active = True
                             if not ending:
-                                publish(phase="thinking")
+                                publish(backend_busy=True)
                         elif kind == "session.output_audio.delta" and not ending:
                             audio = base64.b64decode(event.delta)
                             output_bytes += len(audio)
-                            sys.stdout.buffer.write(audio)
-                            sys.stdout.buffer.flush()
+                            metrics.interval("output_receive_gap")
+                            metrics.count("output_chunks")
+                            if backend_busy():
+                                metrics.count("output_chunks_during_backend")
+                            if pcm_output.offer(audio):
+                                metrics.count("output_non_silent_chunks")
+                                if backend_busy():
+                                    metrics.count("output_non_silent_chunks_during_backend")
                         elif kind in ("session.input_transcript.delta", "session.output_transcript.delta"):
                             is_input = kind == "session.input_transcript.delta"
                             if is_input:
@@ -254,18 +313,20 @@ async def run(args):
                                 transcript_sync.heard(last_input)
                             if not ending:
                                 publish(phase="listening" if is_input else "speaking")
-                            print(("USER " if is_input else "COACH ") + event.delta, file=sys.stderr, flush=True)
+                            metrics.count("input_transcript_fragments" if is_input else "output_transcript_fragments")
                         elif kind == "session.closed":
                             closed.set()
                             ledger.data["session_finalized"] = True
-                            ledger.save()
-                            publish(phase="done" if ledger.data.get("playback") == "aplay_drained" else "error")
+                            async with backend.ledger_lock:
+                                await off_thread(ledger.save)
+                            publish(phase="done" if ledger.data.get("playback") == "aplay_drained" else "error", audio_playing=False)
                             print(f"SESSION_CLOSED input={input_bytes} output={output_bytes}", file=sys.stderr, flush=True)
                             break
                         elif kind in ("error", "session.error"):
                             # Error payloads can contain user data; do not dump them or keys.
                             backend.failed = True
                             backend.active = False
+                            publish(backend_busy=False)
                             print(f"API_ERROR {getattr(getattr(event, 'error', None), 'code', kind)}", file=sys.stderr, flush=True)
                             if not ready.is_set():
                                 raise RuntimeError("Session startup rejected")
@@ -297,7 +358,12 @@ def main():
     try:
         asyncio.run(run(args))
     except Exception as exc:
-        atomic_json(args.status, {"phase": "error", "error": type(exc).__name__})
+        try:
+            state = json.loads(args.status.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            state = {}
+        state.update(phase="error", error=type(exc).__name__, updated_at=time.time())
+        atomic_json(args.status, state)
         print(f"Coach stopped: {type(exc).__name__}; saved records retained", file=sys.stderr)
         raise SystemExit(1) from None
 
