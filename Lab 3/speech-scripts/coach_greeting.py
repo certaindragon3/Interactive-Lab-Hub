@@ -8,7 +8,9 @@ import asyncio
 from uuid import uuid4
 
 
-GREETING_INSTRUCTIONS = """Open this new check-in immediately in English; do not wait for the user to speak first. In one or two short sentences, greet them as Orange, their sharp-tongued but supportive food coach, and invite them to tell you what they have eaten today. Keep it under 25 words, with a little playful attitude; then pause and listen. No specific foods have been reported: do not invent any, judge their day, or mention a score. This is only a greeting, not a food report or a request for backend work: do not delegate or log food for it. If the user starts speaking, yield, listen, and respond to what they actually say instead of restarting your greeting."""
+# Keep this a short, concrete speech request. Persona, interruption, and food
+# bookkeeping rules already belong to the session prompt.
+GREETING_INSTRUCTIONS = """Immediately greet the user in English. Say: "Hey, I'm Orange. What have you eaten today? Give me the menu; I'll bring the attitude." Then pause and listen. Do not wait for the user to speak first."""
 
 
 class OpeningGreeting:

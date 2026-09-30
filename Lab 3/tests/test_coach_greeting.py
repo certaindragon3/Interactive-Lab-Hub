@@ -98,10 +98,12 @@ class GreetingTests(unittest.IsolatedAsyncioTestCase):
         await pending
 
     async def test_prompt_does_not_supply_a_fake_menu_or_request_bookkeeping(self):
-        self.assertIn("immediately in English", GREETING_INSTRUCTIONS)
-        self.assertIn("under 25 words", GREETING_INSTRUCTIONS)
-        self.assertIn("do not delegate or log food", GREETING_INSTRUCTIONS)
-        self.assertIn("If the user starts speaking, yield", GREETING_INSTRUCTIONS)
+        self.assertIn("Immediately greet the user in English", GREETING_INSTRUCTIONS)
+        self.assertIn("What have you eaten today?", GREETING_INSTRUCTIONS)
+        self.assertIn("Then pause and listen", GREETING_INSTRUCTIONS)
+        self.assertIn("Do not wait for the user to speak first", GREETING_INSTRUCTIONS)
+        self.assertLess(len(GREETING_INSTRUCTIONS.split()), 50)
+        self.assertNotIn("log_food", GREETING_INSTRUCTIONS)
         for food in ("broccoli", "cake", "fried chicken"):
             self.assertNotIn(food, GREETING_INSTRUCTIONS.lower())
 
