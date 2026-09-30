@@ -84,6 +84,29 @@ Check your audio devices before going further. `arecord -l` lists capture device
 > I then heard a test WAV through the USB speaker. I installed the Lab 3
 > packages in `Lab 3/.venv`, separate from the Pi's boot-display environment.
 
+> **Quick speaker volume control:** run `speech-scripts/volume.sh` on Orange,
+> or from this Lab's directory on my Mac (it connects through `ssh Orange`).
+> No virtual environment is required. It controls the UACDemoV1.0 USB
+> speaker's ALSA `PCM` mixer, so adjustment does not require restarting the
+> speech program. It selects the speaker by card name rather than its USB
+> card number, which can change after a reboot or reconnect.
+>
+> ```bash
+> ./speech-scripts/volume.sh         # Show current volume and mute state
+> ./speech-scripts/volume.sh 70      # Set 70% and unmute
+> ./speech-scripts/volume.sh -5      # Lower by 5 percentage points
+> ./speech-scripts/volume.sh +5      # Raise by 5 percentage points
+> ./speech-scripts/volume.sh mute    # Silence without losing the setting
+> ./speech-scripts/volume.sh unmute  # Restore sound at that setting
+> ./speech-scripts/volume.sh ui      # Arrows: adjust; M: mute; Esc: exit
+> ```
+>
+> I can keep the interactive mixer open in a second terminal during a demo.
+> Numeric commands use `amixer`'s raw percentage scale; the interactive
+> `alsamixer` panel uses a perceptual scale, so their displayed percentages
+> can differ. Relative changes preserve mute state. This changes the current
+> mixer setting; it does not configure a startup volume or the microphone gain.
+
 ## A. Text to Speech
 
 Your Pi can speak in several quite different ways, and the differences are audible in a way that matters for design. In `speech-scripts/` there are shell scripts for each.
