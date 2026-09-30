@@ -5,6 +5,7 @@
 > **Jiesen Huang.** I tested the Part 1 speech interaction on Orange. Codex
 > assisted with remote setup, scripts, this writeup, and the storyboard illustrations
 > and layout; I provided the speech and listening observations and the coach concept.
+> A teammate wrote the three-user test feedback incorporated into Part 2.
 
 > **How to read this page:** my own responses are set in blockquotes like this
 > one, to separate them from the original assignment text.
@@ -358,7 +359,7 @@ For Part 2, you will redesign the interaction with the speech-enabled device usi
 >
 > | Beat | User / control | Coach and display |
 > | --- | --- | --- |
-> | Start | Press the upper A button and report broccoli. | Enter the listening state. Respond with specific encouragement and ask for a portion if it is missing. |
+> | Start | Press the upper A button; wait for the opening invitation, then report broccoli. | The later iteration requests an English opening prompt before the first food report. Listen, respond with specific encouragement and ask for a portion if it is missing. |
 > | Clarify | Give the amount, such as one bowl. | Save the entry in the background; show the green smile without reading out the bookkeeping. Leave room for the next food. |
 > | Complicate | Add cake and its portion. | Shift to a yellow raised eyebrow. Make a dry joke that refers back to the broccoli, rather than delivering an unrelated insult. |
 > | Escalate | Add fried chicken; clarify or correct an amount when needed. | Shift to a red glare and build on the earlier foods. The user can interrupt the speech. The exact one-second stare from the acted script is not enforced. |
@@ -408,7 +409,7 @@ The system should:
 >
 > **Author trial and iteration.** The first real button-and-microphone trial completed the saved-record and playback loop, but I found the coach too mechanical: it did not feel like a conversation. In the second trial I liked the revised character, which restored encouragement and sharper menu jokes, but the ending still sounded mechanical. That trial also exposed missed bookkeeping during the conversation. The next changes move routine record updates to an app-triggered background pass and replace formal closing labels with a short food recap, the stored score and a contextual punchline. Personality quality is assessed by listening, not proved by unit tests.
 >
-> **Verification status.** Targeted automated tests cover persistence, unknown portions, corrections, duplicate calls, backend tool continuation and the end-button playback handshake. Current device and API results are recorded in [the verification note](test-evidence/food-coach-2026-09-27.md). Automated synthetic speech is not participant testing. Camera recognition and the two-person usability study remain unfinished.
+> **Verification status.** Targeted automated tests cover persistence, unknown portions, corrections, duplicate calls, backend tool continuation and the end-button playback handshake. Current device and API results are recorded in [the verification note](test-evidence/food-coach-2026-09-27.md). Automated synthetic speech is not participant testing. The three-user feedback is documented below, separately from the author trials and automated checks. Camera recognition remains unimplemented. The later audio, opening-prompt and activity-cue changes are documented in [the September 30 verification note](AUDIO_VERIFICATION_2026-09-30.md); those engineering checks do not establish that the participant-facing problems have been resolved.
 >
 > **AI assistance.** Codex helped implement the ledger, API bridge, button ending, screen rendering, tests and documentation. GPT-Live generates conversational speech, the delegated model interprets food reports, and TTS renders the application-written recap. The application computes and stores the score.
 
@@ -418,27 +419,59 @@ Try to get at least two people to interact with your system. (Ideally, you would
 
 Answer the following:
 
-> **Study status.** The observations below come from my own development trials and the scripted demonstration above. Testing with at least two other people is still pending; I will add their observations separately.
+> **Three-user testing.** We tested the system with three users. The observations below come from our teammate's written feedback; the earlier author trials and rehearsed demonstration are separate development evidence. The three test recordings are linked in the order supplied, without assuming that recording numbers correspond to the user numbers in the feedback.
+>
+> | Recording | Test video |
+> | --- | --- |
+> | 1 | [Watch Recording 1 — IMG_2993.MOV](https://drive.google.com/file/d/1QumG519KZk4dyWR9hm_BJX6LHlwHpFQJ/view?usp=sharing) |
+> | 2 | [Watch Recording 2 — IMG_2991 2.MOV](https://drive.google.com/file/d/1u61GTxf0ozHFllubN2CocLazCqHkdldY/view?usp=sharing) |
+> | 3 | [Watch Recording 3 — IMG_2987 2.MOV](https://drive.google.com/file/d/1lLDcYg3TR6D0aUHv-P-L6SUNnn3UEdpF/view?usp=sharing) |
+
+### User 1
+
+> User 1 was not familiar with the physical button and was initially unsure how to start the interaction. This suggests that the device needs clearer onboarding before the conversation begins. A ready-screen instruction such as “Press A to start” should explain how to begin, followed by a short explanation of what the button does during the conversation.
+
+### User 2
+
+> User 2 was able to start the system, but after activation they were unsure what to do next. The system did not immediately give enough guidance about the input it expected. A clear spoken opening, such as “Tell me what you ate today,” would make the next action easier to understand. The coach could then ask about portions as needed, rather than requiring the user to learn the whole reporting format upfront.
+
+### User 3
+
+> User 3 noticed that the system sometimes felt slow. After submitting their food information, they waited for feedback and thought the system had frozen. Our teammate described this as a wait during score calculation. From the user's perspective, the processing state was not apparent, so the delay looked like a failure. The current ending includes record reconciliation and speech preparation as well as score calculation; without timing logs tied to this test, we cannot attribute the entire wait to the calculation itself.
 
 ### What worked well about the system and what didn't?
-> In the recorded run, the coach connected its responses across foods: broccoli received encouragement, cake changed the tone, and fried chicken prompted a stronger joke about the same meal. The final recap named all three foods and gave a definite result. That continuity supports the intended character better than separate confirmations after every item.
+
+> The basic interaction worked: according to the test feedback, all three users were able to interact with the device using speech and eventually complete the food-reporting flow. Once users understood what to do, speech was a natural input method.
 >
-> Earlier trials exposed two problems: the voice could sound like a form being filled out, and lively conversation did not guarantee that foods were being saved during the check-in. I separated background logging from the spoken performance and shortened the closing into a recap plus a joke. The new recording shows one successful path, but does not establish whether unfamiliar users find the humor supportive, understand the score, or know how to correct a mistake.
+> The main problems were onboarding, prompting and system-state visibility. User 1 did not immediately understand how to use the button. User 2 did not know what to say after the system started. User 3 interpreted the processing delay as the system freezing. Together, these observations show that successful completion alone is not enough: the device must also make the next action and the reason for waiting understandable.
+>
+> The earlier scripted demonstration showed the intended encouragement, contextual jokes and final recap. The three-user feedback adds evidence about usability, but does not establish whether users found the humor supportive or understood the arbitrary menu-game score. Those questions need explicit follow-up.
 
 ### What worked well about the controller and what didn't?
-> The same physical A button provides a start and an explicit request to finish. The small screen can show the coach's changing expression while its activity label explains whether the system is listening, saving or delivering the recap. This lets the spoken response stay conversational instead of narrating every internal step.
+
+> The physical controller gives the interaction a concrete start and finish: the upper A button starts a check-in, and another press requests the final recap. Its screen can show the coach's expression and a separate activity label while we observe how users respond to the flow. In this implementation, the application and voice model generate responses; the button controller is not a human wizard manually choosing each reply.
 >
-> The ending is not instantaneous: the app has to reconcile the record and prepare the spoken recap. The demonstration also shows how small the screen text is compared with the face. I still need to test whether a new user notices the state cue, understands that another press starts the ending, and waits for the recap rather than assuming the device has stopped responding.
+> The tests exposed weaknesses in how that control was communicated. User 1 did not know how to start, and User 3 did not perceive a clear processing cue. Although the prototype already had screen state labels, the feedback suggests that their presence was insufficient to make the wait understandable. We should make the start instruction easier to notice and test a prominent thinking animation or a short spoken acknowledgment such as “Let me put that together.” A separate LED is another possible cue, not part of the current implementation.
+>
+> The later iteration adds an automatic opening prompt, clearer timed activity cues and a short processing tone. Engineering checks are recorded in [the September 30 verification note](AUDIO_VERIFICATION_2026-09-30.md). These changes still need a human check of screen readability, cue audibility and whether users understand the wait; the original feedback should not be treated as a successful retest.
 
 ### What lessons can you take away from the WoZ interactions for designing a more autonomous version of the system?
-> A human wizard can keep the food list in mind, choose when to ask a question and land a joke at the right moment. Those abilities have to be made explicit in an autonomous version. The application now owns the food record, duplicate/correction rules, numerical score and finishing sequence, while the voice model handles the character and conversational wording. The missed logging in an early trial showed why a convincing spoken response is not evidence that the underlying task was completed.
+
+> The acting/WoZ exercise and subsequent prototype tests showed that the system should not assume users already know how to interact with it. User 1's experience points to onboarding before activation. User 2's experience points to a clear spoken prompt immediately afterward. User 3's experience points to a perceptible processing state whenever the device cannot reply promptly.
 >
-> The acted version's exact pause and interruption timing are still design targets, not guaranteed behavior. Future trials should include an interruption, an ambiguous portion, a correction and an early end press, as well as the normal script. I would compare both task completion and whether the user still feels encouraged after the roast.
+> In a more autonomous version, the device should distinguish ready, listening, thinking and speaking states, while keeping these separate from the face's comic mood. The opening should invite a food report, and longer processing steps should receive an acknowledgment so users know the system is still working. These cues should also explain whether the user can keep talking or should wait for the final recap.
+>
+> A human wizard can remember the food list, clarify a portion and choose when to finish. Our application now owns the food record, correction rules, numerical score and finishing sequence, while the voice model handles the character and wording. Earlier missed logging showed why a convincing spoken response is not evidence that the underlying task was completed. Future trials should include a correction, an interruption and an early end press alongside the normal flow.
+>
+> Latency is both a technical and an interaction-design issue. Unexplained silence can make a working system appear broken. A clearer cue can explain a necessary wait, but we should also measure and reduce the wait itself, and provide an explicit error or recovery message if processing fails.
 
 ### How could you use your system to create a dataset of interaction? What other sensing modalities would make sense to capture?
-> The current application already keeps a private per-check-in record of foods, portions, corrections, tool results, the scoring rubric and the final recap status. With participants' agreement, a study could add timestamped turns, button presses and display states, plus annotations for clarification, interruption, logging mistakes, waiting time and reactions to the humor. A useful unit would be a user food report paired with the resulting ledger change and coach response; this would reveal cases where the conversation sounds correct but the record is wrong. The current app does not retain raw microphone recordings.
+
+> With participants' agreement, we could log interactions as timestamped sequences of spoken food reports, transcripts, button presses, interface states, system responses, ledger changes, score results and response latency. The application already keeps a private per-check-in record of foods, portions, corrections, tool results and final recap status; it does not retain raw microphone recordings. A study dataset would require additional event logging and consented collection, rather than assuming the existing records capture the whole interaction.
 >
-> A camera could capture a dish as an additional food/portion cue, but the user should confirm its interpretation before it enters the record. For studying the interaction itself, a consented recording of the device and participant could help relate visible hesitation or laughter to a particular response; those reactions should be annotated rather than inferred automatically from a face. Neither camera recognition nor this participant dataset has been implemented.
+> The three tests suggest useful measures: time from seeing the ready device to pressing A, time from activation or the opening prompt to the first food report, and time spent waiting before repeating speech or pressing the button again. Pairing each food report with its ledger change and coach response would also reveal cases where the conversation sounds correct but the saved record is wrong.
+>
+> Button-event logging and screen-state logging would connect user actions to what the interface was showing. A consented camera recording of the participant and device could help annotate hesitation, gaze toward the screen or reactions during pauses; confusion should be established through observation and follow-up questions, not inferred automatically from a face. A separate camera input for food recognition could supply food and portion suggestions, which the user would confirm before they enter the record. Neither camera recognition nor this expanded participant dataset has been implemented.
 
 <details>
   <summary><strong>Submission Cleanup Reminder (Click to Expand)</strong></summary>
