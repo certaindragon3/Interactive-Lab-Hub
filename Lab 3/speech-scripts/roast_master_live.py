@@ -67,16 +67,19 @@ async def run(args):
     metrics = Metrics()
     screen = StatusWriter(args.status, metrics)
     audio = PCMOutput(sys.stdout.buffer, metrics)
+    transcript_trace = []
     try:
-        await run_session(args, metrics, screen, audio)
+        await run_session(args, metrics, screen, audio, transcript_trace)
     finally:
         try:
             await audio.worker.stop()
         finally:
             await screen.close()
+            if args.transcript_log:
+                await off_thread(atomic_json, args.transcript_log, {"events": transcript_trace})
 
 
-async def run_session(args, metrics, screen, pcm_output):
+async def run_session(args, metrics, screen, pcm_output, transcript_trace):
     from openai import AsyncOpenAI
     load_key()
     ledger = Ledger(args.record)
@@ -131,8 +134,6 @@ async def run_session(args, metrics, screen, pcm_output):
                 await backend.handle(event)
                 if not ending:
                     publish(backend_busy=backend.active)
-
-            backend_worker = SerialWorker(handle_backend)
 
             def backend_busy():
                 return backend.active or backend_worker.busy
@@ -233,8 +234,8 @@ async def run_session(args, metrics, screen, pcm_output):
                 async with backend.ledger_lock:
                     await off_thread(ledger.freeze, reconciled)
                 summary = await localize_recap(client, backend_model, ledger, language, reconciled)
-                ledger.data["summary"] = summary
                 async with backend.ledger_lock:
+                    ledger.data["summary"] = summary
                     await off_thread(ledger.save)
                 publish(phase="synthesizing", backend_busy=False, score=ledger.snapshot()["score"], summary=summary)
                 print("SUMMARY " + summary, file=sys.stderr, flush=True)
@@ -256,10 +257,12 @@ async def run_session(args, metrics, screen, pcm_output):
                     ack = json.loads(args.playback_ack.read_text(encoding="utf-8"))
                     if ack.get("returncode") != 0:
                         raise RuntimeError("Audio player failed")
-                    ledger.data["playback"] = "aplay_drained"
+                    async with backend.ledger_lock:
+                        ledger.data["playback"] = "aplay_drained"
                     publish(phase="closing", audio_playing=False)
                 except Exception as exc:
-                    ledger.data["playback"] = "unconfirmed"
+                    async with backend.ledger_lock:
+                        ledger.data["playback"] = "unconfirmed"
                     publish(phase="error", error="Summary playback unconfirmed; saved recap is available")
                     print(f"Summary failed ({type(exc).__name__}); saved recap retained", file=sys.stderr)
                 finally:
@@ -276,6 +279,7 @@ async def run_session(args, metrics, screen, pcm_output):
                 "audio": {"format": {"type": "audio/pcm", "rate": 24000}, "output": {"voice": "marin"}},
                 "delegation": {"type": "responses", "responses": {"model": backend_model,
                     "instructions": BACKEND_PROMPT, "tools": TOOLS, "parallel_tool_calls": False}}})
+            backend_worker = SerialWorker(handle_backend)
             sender = asyncio.create_task(send_audio())
             finisher = asyncio.create_task(finish())
             tasks = [sender, finisher, asyncio.create_task(sync_food_reports()), asyncio.create_task(activity_cues()), asyncio.create_task(greet()), backend_worker.task]
@@ -319,7 +323,14 @@ async def run_session(args, metrics, screen, pcm_output):
                         elif kind == "session.output_audio.delta" and not ending:
                             audio = base64.b64decode(event.delta)
                             output_bytes += len(audio)
-                            metrics.interval("output_receive_gap")
+                            gap = metrics.interval("output_receive_gap")
+                            if gap > 300:
+                                gaps = metrics.values.setdefault("output_gap_events", [])
+                                gaps.append({"at_seconds": round(time.monotonic() - metrics.last.get("greeting_requested", time.monotonic()), 2),
+                                             "gap_ms": round(gap, 2), "backend_busy": backend_busy(),
+                                             "queued_pcm_ms": round(pcm_output.buffered / 48, 2),
+                                             "recent_loop_lag_ms": metrics.values.get("event_loop_lag_latest_ms", 0)})
+                                del gaps[:-20]
                             metrics.count("output_chunks")
                             if backend_busy():
                                 metrics.count("output_chunks_during_backend")
@@ -333,16 +344,21 @@ async def run_session(args, metrics, screen, pcm_output):
                                     metrics.count("output_non_silent_chunks_during_backend")
                         elif kind in ("session.input_transcript.delta", "session.output_transcript.delta"):
                             is_input = kind == "session.input_transcript.delta"
+                            if args.transcript_log and len(transcript_trace) < 5000:
+                                transcript_trace.append({"speaker": "user" if is_input else "coach", "text": event.delta,
+                                                         "start_ms": getattr(event, "start_ms", None), "end_ms": getattr(event, "end_ms", None)})
                             if is_input:
                                 last_input = time.monotonic()
                                 transcript_sync.heard(last_input)
                             if not ending:
                                 publish(phase="listening" if is_input else "speaking")
                             metrics.count("input_transcript_fragments" if is_input else "output_transcript_fragments")
+                            if not is_input and not metrics.values.get("input_transcript_fragments"):
+                                metrics.count("opening_transcript_fragments")
                         elif kind == "session.closed":
                             closed.set()
-                            ledger.data["session_finalized"] = True
                             async with backend.ledger_lock:
+                                ledger.data["session_finalized"] = True
                                 await off_thread(ledger.save)
                             publish(phase="done" if ledger.data.get("playback") == "aplay_drained" else "error", audio_playing=False)
                             print(f"SESSION_CLOSED input={input_bytes} output={output_bytes}", file=sys.stderr, flush=True)
@@ -379,6 +395,7 @@ def main():
     parser.add_argument("--status", type=Path, default=folder / "status.json")
     parser.add_argument("--playback-ack", type=Path, required=True)
     parser.add_argument("--max-seconds", type=int, default=180)
+    parser.add_argument("--transcript-log", type=Path, help="Opt-in private transcript trace, written once after the session (synthetic diagnostics)")
     args = parser.parse_args()
     try:
         asyncio.run(run(args))

@@ -33,7 +33,9 @@ class Metrics:
         now = time.monotonic()
         if key in self.last:
             self.maximum(key + "_max_ms", (now - self.last[key]) * 1000)
+        previous = self.last.get(key)
         self.last[key] = now
+        return (now - previous) * 1000 if previous is not None else 0
 
 
 class SerialWorker:
@@ -177,14 +179,16 @@ class StatusWriter:
 
     async def _save(self):
         state = copy.deepcopy(self.state)
-        state["audio_diagnostics"] = dict(self.metrics.values)
+        state["audio_diagnostics"] = copy.deepcopy(self.metrics.values)
         await off_thread(atomic_json, self.path, state)
 
     async def _run(self):
         while not self.closed:
             start = time.monotonic()
             await asyncio.sleep(0.1)
-            self.metrics.maximum("event_loop_lag_max_ms", max(0, time.monotonic() - start - 0.1) * 1000)
+            lag = max(0, time.monotonic() - start - 0.1) * 1000
+            self.metrics.values["event_loop_lag_latest_ms"] = round(lag, 2)
+            self.metrics.maximum("event_loop_lag_max_ms", lag)
             if self.state:
                 await self._save()
 

@@ -190,5 +190,17 @@ class RubricTests(unittest.TestCase):
             Ledger(self.path)
 
 
+
+class CountedFoodPortionTests(unittest.TestCase):
+    def test_whole_food_count_is_a_stated_portion(self):
+        with tempfile.TemporaryDirectory() as folder:
+            ledger = Ledger(Path(folder) / "record.json")
+            result = ledger.execute("counted-food", "log_food", {
+                "entry_id": "apple-1", "action": "add", "food": "apple",
+                "portion": "one apple", "category": "fruit", "separate_serving": False})
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["score"], 60)
+            self.assertEqual(result["pending_portions"], 0)
+
 if __name__ == "__main__":
     unittest.main()

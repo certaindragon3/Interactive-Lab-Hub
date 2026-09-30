@@ -17,7 +17,7 @@ from food_coach import atomic_json
 from roast_master_live import LAB_DIR, load_key
 
 
-async def main(device, empty=False, language="zh"):
+async def main(device, empty=False, language="zh", alternative=False):
     from openai import AsyncOpenAI
     load_key()
     folder = LAB_DIR / ".food-coach" / ("smoke-" + uuid4().hex)
@@ -26,6 +26,12 @@ async def main(device, empty=False, language="zh"):
     prompts = ["我今天吃了一碗西兰花，还吃了蛋糕。", "蛋糕是半块，不是整块。", "我还吃了两块炸鸡。"]
     if language == "en":
         prompts = ["I ate one bowl of broccoli and some cake.", "蛋糕是半块，不是整块。", "I also ate two pieces of fried chicken."]
+    expected_counts, expected_scores, expected_pending = [2, 2, 3], [60, 55, 45], [1, 0, 0]
+    expected_categories = {"vegetable", "dessert", "fried"}
+    if alternative:
+        prompts = ["I ate one apple.", "I also ate one bowl of plain rice.", "And I had one scoop of ice cream."]
+        expected_counts, expected_scores, expected_pending = [1, 2, 3], [60, 65, 60], [0, 0, 0]
+        expected_categories = {"fruit", "staple", "dessert"}
     if empty:
         prompts = []
     async with AsyncOpenAI(timeout=30, max_retries=0) as client:
@@ -36,7 +42,7 @@ async def main(device, empty=False, language="zh"):
     log = (folder / "client.log").open("wb")
     agent = await asyncio.create_subprocess_exec(sys.executable, "-u", str(Path(__file__).with_name("roast_master_live.py")),
         "--record", str(folder / "record.json"), "--status", str(folder / "status.json"),
-        "--playback-ack", str(folder / "playback.json"), "--max-seconds", "100",
+        "--playback-ack", str(folder / "playback.json"), "--max-seconds", "100", "--transcript-log", str(folder / "transcripts.json"),
         stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=log)
     player = await asyncio.create_subprocess_exec("aplay", "-q", "-D", device, "-t", "raw", "-f", "S16_LE", "-r", "24000", "-c", "1", stdin=asyncio.subprocess.PIPE)
     async def relay():
@@ -59,7 +65,18 @@ async def main(device, empty=False, language="zh"):
                 if agent.returncode is not None:
                     raise RuntimeError("Client failed to start")
                 await asyncio.sleep(0.1)
-            await feed(bytes(48000))
+            # Verify proactive speech, not just acceptance of the opening instruction.
+            await feed(bytes(48000 * 12))
+            initial_status = json.loads((folder / "status.json").read_text(encoding="utf-8"))
+            diagnostics = initial_status.get("audio_diagnostics", {})
+            assert initial_status.get("greeting") == "accepted", "Opening instruction was not acknowledged"
+            assert diagnostics.get("opening_non_silent_chunks", 0) > 0, "Coach did not greet before user speech"
+            assert diagnostics.get("opening_transcript_fragments", 0) > 0, "Opening needs assistant transcript as well as audio"
+            assert not diagnostics.get("input_transcript_fragments"), "Silence was transcribed as user speech"
+            assert not diagnostics.get("tool_calls"), "Greeting should not trigger food bookkeeping"
+            initial_record = json.loads((folder / "record.json").read_text(encoding="utf-8"))
+            assert not initial_record["entries"], "Greeting invented a saved food"
+            print("OPENING_CHECK " + json.dumps({key: value for key, value in diagnostics.items() if key.startswith(("opening_", "greeting_"))}), flush=True)
             for index, (text, clip) in enumerate(zip(prompts, clips)):
                 print("SYNTHETIC_USER " + text, flush=True)
                 await feed(clip)
@@ -68,9 +85,9 @@ async def main(device, empty=False, language="zh"):
                 snapshot = checkpoint["snapshot"]
                 print("ONGOING_CHECKPOINT " + json.dumps(snapshot, ensure_ascii=False), flush=True)
                 assert not checkpoint["closed"], "Record should update before the end button"
-                assert len(snapshot["entries"]) == (2 if index < 2 else 3), "A food report was not saved during conversation"
-                assert snapshot["score"] == [60, 55, 45][index]
-                assert snapshot["pending_portions"] == [1, 0, 0][index]
+                assert len(snapshot["entries"]) == expected_counts[index], "A food report was not saved during conversation"
+                assert snapshot["score"] == expected_scores[index]
+                assert snapshot["pending_portions"] == expected_pending[index]
             agent.stdin.close()
             await agent.wait()
             await relay_task
@@ -82,9 +99,26 @@ async def main(device, empty=False, language="zh"):
         print("LANGUAGE_LOCK " + record["language"], flush=True)
         assert record.get("playback") == "aplay_drained" and record.get("reconciled")
         assert len(entries) == (0 if empty else 3) and all(e["portion"] for e in entries)
-        assert {e["category"] for e in entries} == (set() if empty else {"vegetable", "dessert", "fried"})
+        assert {e["category"] for e in entries} == (set() if empty else expected_categories)
+        if alternative:
+            trace = json.loads((folder / "transcripts.json").read_text(encoding="utf-8"))
+            spoken = "".join(event["text"] for event in trace["events"] if event["speaker"] == "coach").casefold()
+            assert spoken, "Need actual coach speech for prompt grounding check"
+            assert all(food not in spoken for food in ("broccoli", "cake", "fried chicken")), "Coach reused an unreported scripted food"
+            assert all(food not in record["summary"].casefold() for food in ("broccoli", "cake", "fried chicken"))
+            print("ALTERNATIVE_MENU_PASS (no old scripted foods in coach transcript or recap)", flush=True)
+        status = json.loads((folder / "status.json").read_text(encoding="utf-8"))
+        print("AUDIO_DIAGNOSTICS " + json.dumps(status.get("audio_diagnostics", {})), flush=True)
         print("SMOKE_PASS (synthetic speech, not a human test)", flush=True)
     finally:
+        # Preserve opt-in transcript evidence even when a checkpoint fails.
+        # Give the existing ending/EOF protocol one bounded chance before killing.
+        if agent.returncode is None:
+            agent.stdin.close()
+            try:
+                await asyncio.wait_for(agent.wait(), 45)
+            except TimeoutError:
+                pass
         for process in (agent, player):
             if process.returncode is None:
                 process.kill()
@@ -99,5 +133,6 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="null", help="ALSA playback device (default null)")
     parser.add_argument("--empty", action="store_true", help="Quick no-food ending test")
     parser.add_argument("--language", choices=["zh", "en"], default="zh", help="Synthetic INPUT language; coach output must always stay English")
+    parser.add_argument("--alternative", action="store_true", help="Use apple, rice and ice cream; reject old scripted foods in coach output")
     args = parser.parse_args()
-    asyncio.run(main(args.device, args.empty, args.language))
+    asyncio.run(main(args.device, args.empty, args.language, args.alternative))

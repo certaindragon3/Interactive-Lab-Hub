@@ -53,6 +53,8 @@ class Backend:
                         self.metrics.maximum("tool_execute_max_ms", (time.monotonic() - started) * 1000)
                 except (ValueError, TypeError):
                     result = {"ok": False, "error": "Invalid tool arguments"}
+                if self.metrics and not result.get("ok"):
+                    self.metrics.count("tool_errors")
                 self.changed(result)
                 started = time.monotonic()
                 await self.connection.response.item.create(item={"type": "function_call_output",
