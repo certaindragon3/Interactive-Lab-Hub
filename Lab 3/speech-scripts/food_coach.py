@@ -4,11 +4,36 @@ import json
 import os
 import re
 import tempfile
+import unicodedata
 from pathlib import Path
+from types import MappingProxyType
 
-RUBRIC = {"vegetable": 10, "fruit": 10, "protein": 5, "staple": 5,
-          "dessert": -5, "fried": -10, "other": 0}
+# This is the sole executable definition of the fictional scoring rules.
 RUBRIC_VERSION = "menu-game-v1"
+RUBRIC = MappingProxyType({"vegetable": 10, "fruit": 10, "protein": 5, "staple": 5,
+                         "dessert": -5, "fried": -10, "other": 0})
+BASE_SCORE = 50
+CATEGORY_CAP = 20
+SCORE_MIN, SCORE_MAX = 0, 100
+SCORE_SCOPE = "this check-in only; fictional menu game, not nutrition or calories"
+
+
+def rubric_definition():
+    """JSON-safe rule metadata; callers cannot mutate the scoring constants."""
+    return {"version": RUBRIC_VERSION, "base": BASE_SCORE, "points_per_entry": dict(RUBRIC),
+            "category_cap": CATEGORY_CAP, "score_min": SCORE_MIN, "score_max": SCORE_MAX,
+            "portion_policy": "unknown is excluded; stated amount never scales points",
+            "empty_policy": "no score until at least one portion is stated", "scope": SCORE_SCOPE}
+
+
+def rubric_instructions():
+    """Append to the backend prompt so numeric rules never need a second copy."""
+    return "Authoritative application scoring rubric: " + json.dumps(rubric_definition(), sort_keys=True)
+
+
+def food_identity(food):
+    # Formatting normalization, deliberately not a guessed food synonym database.
+    return " ".join(unicodedata.normalize("NFKC", food).casefold().split())
 
 
 def atomic_json(path, value):
@@ -33,6 +58,7 @@ class Ledger:
             "rubric": RUBRIC_VERSION, "entries": {}, "calls": {}, "closed": False}
         if self.data["rubric"] != RUBRIC_VERSION:
             raise ValueError("Unsupported saved rubric")
+        self.data.setdefault("removed_ids", [])
         self.save()
 
     def save(self):
@@ -44,14 +70,33 @@ class Ledger:
         known = [e for e in entries if e["portion"] is not None]
         totals = {category: sum(RUBRIC[category] for e in known if e["category"] == category)
                   for category in RUBRIC}
-        contributions = {k: max(-20, min(20, v)) for k, v in totals.items()}
-        return {"rubric": RUBRIC_VERSION, "score": max(0, min(100, 50 + sum(contributions.values()))) if known else None,
-                "base": 50, "category_points": contributions, "entries": copy.deepcopy(entries),
+        contributions = {k: max(-CATEGORY_CAP, min(CATEGORY_CAP, v)) for k, v in totals.items()}
+        before_clamp = BASE_SCORE + sum(contributions.values()) if known else None
+        score = max(SCORE_MIN, min(SCORE_MAX, before_clamp)) if known else None
+        breakdown = {
+            "entries": [{"entry_id": e["entry_id"], "category": e["category"],
+                         "counted": e["portion"] is not None,
+                         "raw_points": RUBRIC[e["category"]] if e["portion"] is not None else 0,
+                         "reason": "stated portion" if e["portion"] is not None else "portion pending"}
+                        for e in entries],
+            "category_raw_points": totals,
+            "category_cap_adjustments": {k: contributions[k] - totals[k] for k in RUBRIC},
+            "before_final_clamp": before_clamp,
+            "final_clamp_adjustment": score - before_clamp if known else None,
+        }
+        return {"rubric": RUBRIC_VERSION, "score": score, "base": BASE_SCORE,
+                "category_points": contributions, "entries": copy.deepcopy(entries),
                 "pending_portions": sum(e["portion"] is None for e in entries),
-                "scope": "this check-in only; fictional menu game, not nutrition or calories"}
+                "rubric_definition": rubric_definition(), "score_breakdown": breakdown,
+                "removed_ids": list(self.data.get("removed_ids", [])), "scope": SCORE_SCOPE}
 
     def execute(self, call_id, name, args):
-        fingerprint = json.dumps([name, args], sort_keys=True, ensure_ascii=False)
+        if not isinstance(call_id, str) or not call_id.strip():
+            return {"ok": False, "error": "call_id must be a nonempty string"}
+        try:
+            fingerprint = json.dumps([name, args], sort_keys=True, ensure_ascii=False, allow_nan=False)
+        except (ValueError, TypeError):
+            return {"ok": False, "error": "arguments must be JSON values"}
         previous = self.data["calls"].get(call_id)
         if previous:
             if previous["fingerprint"] != fingerprint:
@@ -60,6 +105,8 @@ class Ledger:
         before = copy.deepcopy(self.data)
         try:
             if name == "get_food_log":
+                if args != {}:
+                    raise ValueError("get_food_log takes an empty object")
                 result = {"ok": True, **self.snapshot()}
             elif self.data["closed"]:
                 result = {"ok": False, "error": "check-in is frozen"}
@@ -69,7 +116,7 @@ class Ledger:
                 result = {"ok": False, "error": "unknown tool"}
             self.data["calls"][call_id] = {"fingerprint": fingerprint, "result": result}
             self.save()
-            return result
+            return copy.deepcopy(result)
         except (ValueError, TypeError, KeyError) as exc:
             self.data = before
             return {"ok": False, "error": str(exc)}
@@ -80,15 +127,23 @@ class Ledger:
     def _log(self, args):
         if not isinstance(args, dict):
             raise ValueError("arguments must be an object")
+        allowed = {"entry_id", "action", "food", "portion", "category", "separate_serving"}
+        if set(args) - allowed:
+            raise ValueError("Unknown arguments; score and rubric are application-owned")
+        if "separate_serving" in args and type(args["separate_serving"]) is not bool:
+            raise ValueError("separate_serving must be boolean")
         entry_id = args.get("entry_id")
         action = args.get("action")
-        if not isinstance(entry_id, str) or not entry_id or len(entry_id) > 50:
+        if not isinstance(entry_id, str) or (
+                entry_id not in self.data["entries"]
+                and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,49}", entry_id)):
             raise ValueError("entry_id must be a stable short ID")
         entries = self.data["entries"]
         if action == "remove":
             if entry_id not in entries:
                 raise ValueError("Unknown entry_id; inspect get_food_log first")
             del entries[entry_id]
+            self.data["removed_ids"].append(entry_id)
         elif action in ("add", "correct"):
             food, portion, category = args.get("food"), args.get("portion"), args.get("category")
             if not isinstance(food, str) or not food.strip() or len(food) > 40:
@@ -103,19 +158,28 @@ class Ledger:
                 has_unit = any(c.isalpha() and not c.isnumeric() and c not in chinese_numbers for c in remainder)
                 if not has_amount or not has_unit:
                     raise ValueError("Portion needs an explicit amount and unit; size alone is unknown. Use portion=null, never invent a quantity. Explicit number words may be normalized to digits in the user's language.")
-            if category not in RUBRIC:
+            if not isinstance(category, str) or category not in RUBRIC:
                 raise ValueError("Unknown category")
             entry = {"entry_id": entry_id, "food": food.strip(), "portion": portion.strip() if portion else None,
                      "category": category}
             if action == "correct" and entry_id not in entries:
                 raise ValueError("Unknown correction target; inspect get_food_log first")
+            if action == "add" and entry_id in self.data["removed_ids"]:
+                raise ValueError("Removed entry_id cannot be reused; an explicitly new serving needs a new ID")
             if action == "add" and entry_id in entries:
                 if entries[entry_id] != entry:
                     raise ValueError("Existing ID: use correct, not add")
                 return {"ok": True, "duplicate": True, **self.snapshot()}
-            if action == "add" and any(all(e[k] == entry[k] for k in ("food", "portion", "category")) for e in entries.values()):
+            same_food = [e for e in entries.values() if e["entry_id"] != entry_id
+                         and food_identity(e["food"]) == food_identity(food)]
+            if action == "add" and same_food:
                 if args.get("separate_serving") is not True:
-                    raise ValueError("Possible duplicate; only use separate_serving for an explicitly additional serving")
+                    raise ValueError("Possible duplicate food; correct its existing ID for portion clarification or changed classification. Only an explicitly additional serving uses separate_serving=true.")
+                if any(e["category"] != category for e in same_food):
+                    raise ValueError("Same food has a saved category; retain it for an additional serving. A different preparation needs a distinct food description.")
+            if action == "correct" and same_food and food_identity(entries[entry_id]["food"]) != food_identity(food):
+                if not args.get("separate_serving", False):
+                    raise ValueError("Correction would duplicate another food; retain and correct the intended ID, then remove the redundant ID. Use separate_serving only for an explicitly distinct serving.")
             if action == "add" and len(entries) >= 12:
                 raise ValueError("Demo check-in limit: 12 entries")
             entries[entry_id] = entry
@@ -170,14 +234,14 @@ class Ledger:
         return text
 
 
-TOOLS = [{"type": "function", "name": "get_food_log", "description": "Read authoritative saved entries, IDs, score and rubric before editing.",
+TOOLS = [{"type": "function", "name": "get_food_log", "description": "Read authoritative saved entries, IDs, removed IDs, rubric and score calculation before editing.",
           "parameters": {"type": "object", "properties": {}, "additionalProperties": False}, "strict": True},
-         {"type": "function", "name": "log_food", "description": "Save one user-reported food, correct by existing ID, or remove. Never guess portions. Retries reuse IDs. No calorie estimates.",
+         {"type": "function", "name": "log_food", "description": "Save one user-reported food, correct by existing ID, or remove. Never guess portions or scores. Retries and portion clarifications reuse IDs. Retain the saved category unless the user explicitly corrects it. Removed IDs cannot be reused. No calorie estimates.",
           "strict": True, "parameters": {"type": "object", "additionalProperties": False,
-          "properties": {"entry_id": {"type": "string"}, "action": {"type": "string", "enum": ["add", "correct", "remove"]},
+          "properties": {"entry_id": {"type": "string", "description": "Reuse the exact saved ID for corrections. New IDs use 1-50 ASCII letters, digits, underscores or hyphens, starting with a letter or digit."}, "action": {"type": "string", "enum": ["add", "correct", "remove"]},
                          "food": {"type": "string"}, "portion": {"type": ["string", "null"]},
                          "category": {"type": "string", "enum": list(RUBRIC)},
-                         "separate_serving": {"type": "boolean"}},
+                         "separate_serving": {"type": "boolean", "description": "True only for a distinct additional serving explicitly reported by the user, never a repeated mention or portion clarification."}},
           "required": ["entry_id", "action", "food", "portion", "category", "separate_serving"]}}]
 
 BACKEND_PROMPT = """You maintain the authoritative record for a spoken food check-in. The coach always speaks English. Store food names in English, faithfully translating user reports when necessary. Preserve the user's stated portions; explicitly stated number words may be normalized to digits, but never infer a quantity.
