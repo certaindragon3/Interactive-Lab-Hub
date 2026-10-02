@@ -1,6 +1,6 @@
 # Chatterboxes
 
-**NAMES OF COLLABORATORS HERE**
+**Collaborators:** Serena Tsai (ht534), Yuge Xu (yx692), Youzhu Jin (yj578), and Zijii Zhang (zz894).
 
 > **Jiesen Huang.** I tested the Part 1 speech interaction on Orange. Codex
 > assisted with remote setup, scripts, this writeup, and the storyboard illustrations
