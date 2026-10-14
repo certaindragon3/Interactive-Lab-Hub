@@ -98,6 +98,16 @@ class DispenserTests(unittest.TestCase):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 Config(**kwargs)
 
+    def test_decimal_endpoints_allow_exact_stroke_without_exceeding_limit(self):
+        config = Config(home_ms=1.3, step_ms=0.4, limit_ms=1.7,
+                        gesture="push")
+        self.app = Dispenser(config, self.pulses.append, lambda _: None)
+        self.gesture()
+        self.assertEqual(self.pulses, [1.7])
+        self.assertEqual(self.app.state, "TRAVEL_LIMIT")
+        with self.assertRaises(ValueError):
+            Config(home_ms=1.3, step_ms=0.4001, limit_ms=1.7)
+
     def test_invalid_sensor_sample_rejected(self):
         with self.assertRaises(ValueError):
             self.app.tick(0, 65535, 510)

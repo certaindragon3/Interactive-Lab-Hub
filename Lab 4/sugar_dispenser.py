@@ -43,7 +43,7 @@ class Config:
             raise ValueError("Calibration and timing must be finite")
         if not (0.5 <= self.home_ms < self.limit_ms <= 2.5):
             raise ValueError("Require 0.5 <= home_ms < limit_ms <= 2.5")
-        if not 0 < self.step_ms <= self.limit_ms - self.home_ms:
+        if not 0 < self.step_ms <= self.limit_ms - self.home_ms + 1e-9:
             raise ValueError("Step must fit within the calibrated pulse range")
         if self.capacity < 1 or min(values[3:]) <= 0:
             raise ValueError("Capacity and timing must be positive")
