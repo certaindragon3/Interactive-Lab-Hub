@@ -291,6 +291,20 @@ A servo motor is a rotary actuator that allows for precise control of angular po
 ### Part D
 ### Physical Interaction Design: Feast Automata
 
+> **Planned prototype: joystick-controlled sugar-cube dispenser.** Each of four compartments holds one cube. A deliberate joystick deflection requests one indexing cycle; holding the stick does not repeat the request. The stick must return to the center for 0.2 seconds before another request. A deflection must persist for 0.08 seconds to reject brief noise. Input during movement is discarded. Pressing the joystick button stops the program and disables this servo channel's PWM without automatically rewinding the wheel.
+>
+> The proposed actuator is a Miuzei MS18 9g position servo. Its finite travel cannot directly drive unlimited same-direction quarter-turns. [sugar_dispenser.py](sugar_dispenser.py) therefore provides a bounded `direct` mode and a proposed `ratchet` mode. Ratchet mode requires a physical drive pawl and an anti-reverse pawl (or an equivalent one-way indexing mechanism): the outward stroke advances the wheel, and the return stroke resets the drive without reversing the wheel. This mechanism has not been built or tested. With default settings, direct mode allows only one outward stroke, then locks at the travel limit.
+>
+> The wheel also needs a stationary floor, a single-cube outlet, and an initial closed position or shutter so loading does not immediately release a cube. Each compartment should hold only one cube, and the outlet must not expose two compartments at once. The rotor's actual advance must be measured and adjusted to one 90° compartment; a software pulse or angle command alone does not prove this motion or a successful drop.
+>
+> **Local simulation:** from `Lab 4`, run `python3 sugar_dispenser.py` for bounded direct drive or `python3 sugar_dispenser.py --mode ratchet` for the proposed four-cycle mechanism. Neither command imports hardware libraries or operates a motor. Run `python3 -m unittest -v test_sugar_dispenser.py` to check the control logic.
+>
+> **Future Pi operation:** after transferring the source to Orange and activating the isolated Lab 4 environment, run `python sugar_dispenser.py --hardware --mode direct --channel 1`. Use `--mode ratchet` only after installing the one-way mechanism. The joystick uses Qwiic; the servo uses pHAT channel 1, following the earlier channel-1 test, with separate pHAT power. No display control is needed. Run only one pHAT application at a time because its initialization resets the controller.
+>
+> `--home-ms`, `--step-ms`, and `--limit-ms` configure pulse widths, not verified shaft angles. Defaults produce a 1.0 → 2.0 ms stroke at 50 Hz; this wider range has not yet been tested on our servo. Begin with the unloaded servo and a small stroke around the previously tested 1.5 ms center, for example `--home-ms 1.45 --step-ms 0.10 --limit-ms 1.55`. Then expand gradually and measure travel before coupling the rotor. The program prompts for an empty mechanism before homing and for loading afterward. Restarting does not recover the wheel position or inventory; inspect and unload first.
+>
+> The four-cycle counter is an inventory estimate based on completed commands. It cannot detect jams, a missed cube, an empty compartment, or actual arrival in the cup. The initial version has no cup-presence interlock or drop sensor. Current status: local program and simulation only; integrated device behavior and sugar delivery remain unverified.
+
 **Feast Automata:** build a device that **transforms ordinary dining rituals into playful physical interactions.** Begin with a familiar experience around eating, drinking, cooking, serving, or sharing food, and explore how sensing and actuation might augment, exaggerate, automate, or reinterpret your dining experience.
 
 In this part, use the sensing techniques from Parts A–B and the servo actuation from Part C to develop a physical interaction.
@@ -540,4 +554,4 @@ For submission, the readme.md page for this lab should be edited to include the 
 * Link your Lab 4 readme.md in your main Interactive-Lab-Hub readme.md. 
 * Labs are due on Mondays, make sure to submit your Lab 4 readme.md to Canvas.
 
-> **AI assistance:** Codex helped set up the isolated Python environment, run and summarize sensor checks over SSH, and draft these experiment notes. I connected the hardware and performed the physical touch actions. The notes distinguish observed readings from tests that have not been completed.
+> **AI assistance:** Codex helped set up the isolated Python environment, run and summarize sensor checks over SSH, and draft these experiment notes. Codex also drafted the sugar-dispenser control program, local logic tests, and the proposed mechanism notes. I connected the hardware and performed the physical touch actions for the earlier sensor checks. The sugar-dispenser integration has not yet been tested on hardware. The notes distinguish observed readings from tests that have not been completed.

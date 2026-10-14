@@ -1,0 +1,217 @@
+"""Joystick-triggered MS18 prototype; no hardware imports in simulation.
+
+Direct drive has a finite stroke budget. Ratchet mode requires a physical
+one-way indexing mechanism: servo return must NOT turn the sugar wheel back.
+Pulse widths are calibration inputs, never measured shaft angles.
+"""
+
+import argparse
+from dataclasses import dataclass
+import math
+import time
+
+
+@dataclass(frozen=True)
+class Config:
+    mode: str = "direct"
+    channel: int = 1
+    home_ms: float = 1.0
+    step_ms: float = 1.0
+    limit_ms: float = 2.0
+    capacity: int = 4
+    center_x: int = 508
+    center_y: int = 510
+    neutral_threshold: int = 100
+    trigger_threshold: int = 300
+    neutral_seconds: float = 0.2
+    trigger_seconds: float = 0.08
+    move_seconds: float = 0.6
+    drop_seconds: float = 0.5
+
+    def __post_init__(self):
+        if self.mode not in ("direct", "ratchet") or not 0 <= self.channel < 16:
+            raise ValueError("Invalid mechanism mode or servo channel")
+        values = (self.home_ms, self.step_ms, self.limit_ms,
+                  self.neutral_seconds, self.trigger_seconds,
+                  self.move_seconds, self.drop_seconds)
+        if not all(math.isfinite(v) for v in values):
+            raise ValueError("Calibration and timing must be finite")
+        if not (0.5 <= self.home_ms < self.limit_ms <= 2.5):
+            raise ValueError("Require 0.5 <= home_ms < limit_ms <= 2.5")
+        if not 0 < self.step_ms <= self.limit_ms - self.home_ms:
+            raise ValueError("Step must fit within the calibrated pulse range")
+        if self.capacity < 1 or min(values[3:]) <= 0:
+            raise ValueError("Capacity and timing must be positive")
+        if not (0 <= self.center_x <= 1023 and 0 <= self.center_y <= 1023):
+            raise ValueError("Joystick center must be in 0..1023")
+        if not 0 < self.neutral_threshold < self.trigger_threshold <= 1023:
+            raise ValueError("Require neutral threshold < trigger threshold")
+
+    @property
+    def direct_steps(self):
+        return math.floor((self.limit_ms - self.home_ms) / self.step_ms + 1e-9)
+
+
+class Dispenser:
+    """Deterministic state machine. tick() never sleeps or queues gestures."""
+
+    def __init__(self, config, write_pulse, report=print):
+        self.config = config
+        self.write_pulse = write_pulse
+        self.report = report
+        self.state = "WAIT_NEUTRAL"
+        self.completed_cycles = 0  # Commands completed, NOT confirmed sugar drops.
+        self.deadline = 0.0
+        self.neutral_since = None
+        self.push_since = None
+
+    def tick(self, now, x, y, button=1):
+        if self.state == "STOPPED":
+            return
+        if button == 0:
+            self.state = "STOPPED"
+            self.report("STOP: button pressed; inspect wheel before restarting.")
+            return
+        if not (0 <= x <= 1023 and 0 <= y <= 1023 and button == 1):
+            raise ValueError("Invalid joystick sample; stopping rather than dispensing")
+        c = self.config
+        distance = max(abs(x - c.center_x), abs(y - c.center_y))
+
+        if self.state == "ADVANCING" and now >= self.deadline:
+            self.state = "DROPPING"
+            self.deadline = now + c.drop_seconds
+        elif self.state == "DROPPING" and now >= self.deadline:
+            if c.mode == "ratchet":
+                self.write_pulse(c.home_ms)
+                self.state = "RETURNING"
+                self.deadline = now + c.move_seconds
+            else:
+                self.finish_cycle()
+        elif self.state == "RETURNING" and now >= self.deadline:
+            self.finish_cycle()
+        elif self.state == "WAIT_NEUTRAL":
+            if distance <= c.neutral_threshold:
+                if self.neutral_since is None:
+                    self.neutral_since = now
+                if now - self.neutral_since >= c.neutral_seconds:
+                    self.state = "READY"
+                    self.report("READY: move stick in any direction for one cycle.")
+            else:
+                self.neutral_since = None
+        elif self.state == "READY":
+            if distance >= c.trigger_threshold:
+                if self.push_since is None:
+                    self.push_since = now
+                if now - self.push_since >= c.trigger_seconds:
+                    step = self.completed_cycles + 1 if c.mode == "direct" else 1
+                    target = c.home_ms + step * c.step_ms
+                    if target > c.limit_ms + 1e-9:
+                        raise ValueError("Servo target exceeds calibrated limit")
+                    self.write_pulse(min(target, c.limit_ms))
+                    self.state = "ADVANCING"
+                    self.deadline = now + c.move_seconds
+                    self.push_since = None
+                    self.neutral_since = None
+                    self.report("ADVANCING: gesture accepted; further input ignored.")
+            else:
+                self.push_since = None
+
+    def finish_cycle(self):
+        self.completed_cycles += 1
+        c = self.config
+        self.neutral_since = self.push_since = None
+        if self.completed_cycles >= c.capacity:
+            self.state = "EMPTY_ESTIMATE"
+        elif c.mode == "direct" and self.completed_cycles >= c.direct_steps:
+            self.state = "TRAVEL_LIMIT"
+        else:
+            self.state = "WAIT_NEUTRAL"
+        self.report(f"Cycle {self.completed_cycles}/{c.capacity}: {self.state}. "
+                    "Sugar drop has not been sensed.")
+
+
+def simulate(config):
+    """Hold, release and repeat: deterministic demo without real hardware."""
+    pulses = []
+    controller = Dispenser(config, lambda p: pulses.append(p))
+    now = 0.0
+    for _ in range(config.capacity + 1):
+        for x, duration in ((config.center_x, 0.5), (1023, 3.0)):
+            for _ in range(round(duration / 0.02)):
+                controller.tick(now, x, config.center_y)
+                now += 0.02
+    print(f"SIMULATION ONLY: completed={controller.completed_cycles}, "
+          f"state={controller.state}, pulse commands={pulses}")
+
+
+def run_hardware(config):
+    import pi_servo_hat
+    import qwiic_joystick
+
+    joystick = qwiic_joystick.QwiicJoystick()
+    if not joystick.connected or joystick.begin() is False:
+        raise RuntimeError("Qwiic joystick unavailable")
+    hat = pi_servo_hat.PiServoHat(address=0x40)
+    if not hat.is_connected():
+        raise RuntimeError("Servo pHAT unavailable at 0x40")
+
+    def write_pulse(pulse_ms):
+        # At 50 Hz, a frame is 20 ms; specify duty in percent.
+        hat.set_duty_cycle(config.channel, pulse_ms / 20.0 * 100.0)
+
+    controller = Dispenser(config, write_pulse)
+    try:
+        input("Empty/unload the mechanism before homing; Enter to initialize: ")
+        # restart() sets 50 Hz and resets the HAT; don't share it with another app.
+        hat.restart()
+        write_pulse(config.home_ms)
+        time.sleep(config.move_seconds)
+        input("Align wheel at a non-drop position, load cubes; Enter to run: ")
+        print("Push once, then return to center. Press stick button or Ctrl+C to stop.")
+        while controller.state != "STOPPED":
+            # Read the stop button first, including while the servo is moving.
+            button = joystick.button
+            if button == 0:
+                controller.tick(time.monotonic(), config.center_x,
+                                config.center_y, button)
+                break
+            controller.tick(time.monotonic(), joystick.horizontal,
+                            joystick.vertical, button)
+            time.sleep(0.02)
+    finally:
+        # Disable ONLY this channel's PWM; never rewind a loaded direct-drive wheel.
+        # This removes the control signal, not electrical power or mechanical motion.
+        # The older pi_servo_hat implementation maps 0% duty to -1 ticks.
+        # Use PCA9685 LEDn_OFF bit 12 (full-off) explicitly instead.
+        hat.PCA9685.set_channel_word(config.channel, 1, 0)
+        hat.PCA9685.set_channel_word(config.channel, 0, 0x1000)
+        print(f"PWM disabled on channel {config.channel}; "
+              f"completed command cycles={controller.completed_cycles}. "
+              "Inspect position and unload before restart.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--hardware", action="store_true",
+                        help="use Pi hardware; default is a simulation")
+    parser.add_argument("--mode", choices=("direct", "ratchet"), default="direct")
+    parser.add_argument("--channel", type=int, default=1)
+    parser.add_argument("--home-ms", type=float, default=1.0)
+    parser.add_argument("--step-ms", type=float, default=1.0)
+    parser.add_argument("--limit-ms", type=float, default=2.0)
+    parser.add_argument("--capacity", type=int, default=4)
+    parser.add_argument("--center-x", type=int, default=508)
+    parser.add_argument("--center-y", type=int, default=510)
+    args = vars(parser.parse_args())
+    hardware = args.pop("hardware")
+    try:
+        config = Config(**args)
+        run_hardware(config) if hardware else simulate(config)
+    except (ValueError, RuntimeError, OSError, ImportError) as error:
+        parser.exit(1, f"Stopped: {error}\n")
+    except (KeyboardInterrupt, EOFError):
+        print("Stopped by operator.")
+
+
+if __name__ == "__main__":
+    main()

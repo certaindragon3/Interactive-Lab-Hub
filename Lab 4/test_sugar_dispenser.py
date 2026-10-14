@@ -1,0 +1,137 @@
+"""Control logic checks; these do not verify motion or actual sugar drops."""
+
+import unittest
+from unittest.mock import Mock, PropertyMock, patch
+from types import SimpleNamespace
+from sugar_dispenser import Config, Dispenser, run_hardware
+
+
+class DispenserTests(unittest.TestCase):
+    def setUp(self):
+        self.pulses = []
+        self.now = 0.0
+        self.app = Dispenser(Config(mode="ratchet"), self.pulses.append,
+                             lambda _: None)
+
+    def sample_for(self, x, seconds, button=1):
+        for _ in range(round(seconds / 0.02)):
+            self.app.tick(self.now, x, 510, button)
+            self.now += 0.02
+
+    def gesture(self):
+        self.sample_for(508, 0.5)
+        self.sample_for(1023, 3.0)
+
+    def test_startup_requires_neutral(self):
+        self.sample_for(1023, 4)
+        self.assertEqual(self.pulses, [])
+
+    def test_long_hold_dispenses_only_once(self):
+        self.gesture()
+        self.sample_for(1023, 10)
+        self.assertEqual(self.app.completed_cycles, 1)
+        self.assertEqual(self.pulses, [2.0, 1.0])
+
+    def test_noise_and_short_push_do_not_trigger(self):
+        self.sample_for(508, 0.5)
+        for _ in range(20):
+            self.sample_for(1023, 0.04)
+            self.sample_for(750, 0.1)
+        self.assertEqual(self.pulses, [])
+
+    def test_requires_stable_center_between_cycles(self):
+        self.gesture()
+        self.sample_for(508, 0.1)
+        self.sample_for(1023, 3)
+        self.assertEqual(self.app.completed_cycles, 1)
+        self.gesture()
+        self.assertEqual(self.app.completed_cycles, 2)
+
+    def test_gestures_during_motion_are_not_queued(self):
+        self.sample_for(508, 0.5)
+        self.sample_for(1023, 0.2)
+        self.sample_for(508, 0.3)
+        self.sample_for(0, 3)
+        self.assertEqual(self.app.completed_cycles, 1)
+
+    def test_four_cycles_then_inventory_lockout(self):
+        for _ in range(7):
+            self.gesture()
+        self.assertEqual(self.app.completed_cycles, 4)
+        self.assertEqual(self.app.state, "EMPTY_ESTIMATE")
+        self.assertEqual(len(self.pulses), 8)
+
+    def test_direct_drive_does_not_wrap_or_return(self):
+        self.app = Dispenser(Config(), self.pulses.append, lambda _: None)
+        for _ in range(4):
+            self.gesture()
+        self.assertEqual(self.pulses, [2.0])
+        self.assertEqual(self.app.state, "TRAVEL_LIMIT")
+
+    def test_direct_drive_can_use_multiple_calibrated_strokes(self):
+        self.app = Dispenser(Config(step_ms=0.5), self.pulses.append,
+                             lambda _: None)
+        for _ in range(4):
+            self.gesture()
+        self.assertEqual(self.pulses, [1.5, 2.0])
+        self.assertEqual(self.app.completed_cycles, 2)
+
+    def test_stop_during_each_motion_phase_never_returns(self):
+        for phase in ("ADVANCING", "DROPPING", "RETURNING"):
+            with self.subTest(phase=phase):
+                pulses = []
+                app = Dispenser(Config(mode="ratchet"), pulses.append,
+                                lambda _: None)
+                app.state = phase
+                app.tick(0, 508, 510, button=0)
+                app.tick(100, 1023, 510)
+                self.assertEqual(app.state, "STOPPED")
+                self.assertEqual(pulses, [])
+                self.assertEqual(app.completed_cycles, 0)
+
+    def test_bad_calibration_rejected(self):
+        for kwargs in ({"step_ms": 0}, {"limit_ms": 3},
+                       {"home_ms": 2, "limit_ms": 1},
+                       {"step_ms": float("nan")}, {"channel": 16},
+                       {"capacity": 0}, {"move_seconds": -1}):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                Config(**kwargs)
+
+    def test_invalid_sensor_sample_rejected(self):
+        with self.assertRaises(ValueError):
+            self.app.tick(0, 65535, 510)
+        self.assertEqual(self.pulses, [])
+
+    def test_hardware_stop_and_read_failure_disable_pwm_without_rewind(self):
+        for failure in (False, True):
+            with self.subTest(read_failure=failure):
+                joystick = Mock(connected=True)
+                joystick.begin.return_value = True
+                if failure:
+                    type(joystick).button = PropertyMock(side_effect=OSError("I2C read"))
+                else:
+                    joystick.button = 0
+                    # A stop should be handled before attempting either axis read.
+                    type(joystick).horizontal = PropertyMock(side_effect=AssertionError)
+                hat = Mock()
+                modules = {
+                    "qwiic_joystick": SimpleNamespace(QwiicJoystick=lambda: joystick),
+                    "pi_servo_hat": SimpleNamespace(PiServoHat=lambda **_: hat),
+                }
+                with patch.dict("sys.modules", modules), \
+                     patch("builtins.input", return_value=""), \
+                     patch("builtins.print"), patch("sugar_dispenser.time.sleep"):
+                    if failure:
+                        with self.assertRaises(OSError):
+                            run_hardware(Config())
+                    else:
+                        run_hardware(Config())
+                # Homing is the only positive pulse; no shutdown return stroke.
+                hat.set_duty_cycle.assert_called_once_with(1, 5.0)
+                self.assertEqual(hat.PCA9685.set_channel_word.call_args_list,
+                                 [unittest.mock.call(1, 1, 0),
+                                  unittest.mock.call(1, 0, 0x1000)])
+
+
+if __name__ == "__main__":
+    unittest.main()
