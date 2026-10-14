@@ -94,7 +94,7 @@ class DispenserTests(unittest.TestCase):
         for kwargs in ({"step_ms": 0}, {"limit_ms": 3},
                        {"home_ms": 2, "limit_ms": 1},
                        {"step_ms": float("nan")}, {"channel": 16},
-                       {"capacity": 0}, {"move_seconds": -1}):
+                       {"capacity": -1}, {"move_seconds": -1}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 Config(**kwargs)
 
@@ -230,6 +230,67 @@ class CircleTests(unittest.TestCase):
         self.arc(0, 360, samples=31)
         self.center(2)
         self.assertEqual(self.app.completed_cycles, 1)
+
+
+class ContinuousTests(unittest.TestCase):
+    center = CircleTests.center
+    arc = CircleTests.arc
+
+    def setUp(self):
+        self.pulses = []
+        self.reports = []
+        self.now = 0.0
+        self.config = Config(mode="ratchet", continuous=True, capacity=0,
+                             home_ms=0.875, step_ms=1.25, limit_ms=2.125)
+        self.app = Dispenser(self.config, self.pulses.append, self.reports.append)
+        self.center(0.5)
+
+    def test_more_than_four_circles_keep_working(self):
+        for _ in range(7):
+            self.arc(0, 360)
+            self.center(2)
+        self.assertEqual(self.app.completed_cycles, 7)
+        self.assertEqual(self.app.state, "READY")
+        self.assertEqual(self.pulses, [2.125, 0.875] * 7)
+
+    def test_circles_during_motion_queue_and_run_exactly_once(self):
+        for _ in range(5):
+            self.arc(0, 360, samples=61)
+        self.center(10)
+        self.assertEqual(self.app.completed_cycles, 5)
+        self.assertEqual(self.pulses, [2.125, 0.875] * 5)
+        self.assertEqual(self.app.pending_cycles, 0)
+        self.assertTrue(any(r.startswith("QUEUED") for r in self.reports))
+
+    def test_stop_discards_pending_cycles(self):
+        for _ in range(3):
+            self.arc(0, 360, samples=31)
+        self.assertGreater(self.app.pending_cycles, 0)
+        self.app.tick(self.now, 508, 510, button=0)
+        before = list(self.pulses)
+        self.center(10)
+        self.assertEqual(self.app.state, "STOPPED")
+        self.assertEqual(self.app.pending_cycles, 0)
+        self.assertEqual(self.pulses, before)
+
+    def test_queue_is_bounded_and_overflow_is_reported(self):
+        config = Config(mode="ratchet", continuous=True, capacity=0,
+                        max_pending=2, move_seconds=10, drop_seconds=10)
+        self.app = Dispenser(config, self.pulses.append, self.reports.append)
+        self.center(0.5)
+        for _ in range(8):
+            self.arc(0, 360, samples=31)
+        self.assertEqual(self.app.pending_cycles, 2)
+        self.assertTrue(any(r.startswith("QUEUE FULL") for r in self.reports))
+        self.center(100)
+        self.assertEqual(self.app.completed_cycles, 3)
+
+    def test_partial_arc_survives_servo_phase_changes(self):
+        self.arc(0, 360)
+        self.arc(0, 180, samples=31)
+        self.arc(180, 360, samples=31)
+        self.center(10)
+        self.assertEqual(self.app.completed_cycles, 2)
 
 
 if __name__ == "__main__":

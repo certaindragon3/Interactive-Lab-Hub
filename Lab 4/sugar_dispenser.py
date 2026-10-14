@@ -14,6 +14,8 @@ import time
 @dataclass(frozen=True)
 class Config:
     mode: str = "direct"
+    continuous: bool = False
+    max_pending: int = 4
     gesture: str = "circle"
     x_sign: int = 1
     y_sign: int = 1
@@ -36,6 +38,8 @@ class Config:
             raise ValueError("Invalid mechanism mode or servo channel")
         if self.gesture not in ("circle", "push") or self.x_sign not in (-1, 1) or self.y_sign not in (-1, 1):
             raise ValueError("Invalid gesture or joystick orientation")
+        if self.continuous and (self.mode != "ratchet" or self.gesture != "circle" or self.capacity != 0):
+            raise ValueError("Continuous test requires ratchet motion, circles, and capacity=0")
         values = (self.home_ms, self.step_ms, self.limit_ms,
                   self.neutral_seconds, self.trigger_seconds,
                   self.move_seconds, self.drop_seconds)
@@ -45,8 +49,8 @@ class Config:
             raise ValueError("Require 0.5 <= home_ms < limit_ms <= 2.5")
         if not 0 < self.step_ms <= self.limit_ms - self.home_ms + 1e-9:
             raise ValueError("Step must fit within the calibrated pulse range")
-        if self.capacity < 1 or min(values[3:]) <= 0:
-            raise ValueError("Capacity and timing must be positive")
+        if self.capacity < 0 or self.max_pending < 1 or min(values[3:]) <= 0:
+            raise ValueError("Capacity must be nonnegative; queue size and timing positive")
         if not (0 <= self.center_x <= 1023 and 0 <= self.center_y <= 1023):
             raise ValueError("Joystick center must be in 0..1023")
         if not 0 < self.neutral_threshold < self.trigger_threshold <= 1023:
@@ -66,6 +70,7 @@ class Dispenser:
         self.report = report
         self.state = "WAIT_NEUTRAL"
         self.completed_cycles = 0  # Commands completed, NOT confirmed sugar drops.
+        self.pending_cycles = 0
         self.deadline = 0.0
         self.neutral_since = None
         self.push_since = None
@@ -113,20 +118,32 @@ class Dispenser:
         self.state = "ADVANCING"
         self.deadline = now + c.move_seconds
         self.push_since = self.neutral_since = None
-        self.reset_circle()
-        self.report("ADVANCING: gesture accepted; further input ignored.")
+        if not c.continuous:
+            self.reset_circle()
+        self.report("ADVANCING: gesture accepted; additional full circles can queue."
+                    if c.continuous else
+                    "ADVANCING: gesture accepted; further input ignored.")
 
     def tick(self, now, x, y, button=1):
         if self.state == "STOPPED":
             return
         if button == 0:
             self.state = "STOPPED"
+            self.pending_cycles = 0
             self.report("STOP: button pressed; inspect wheel before restarting.")
             return
         if not (0 <= x <= 1023 and 0 <= y <= 1023 and button == 1):
             raise ValueError("Invalid joystick sample; stopping rather than dispensing")
         c = self.config
         distance = max(abs(x - c.center_x), abs(y - c.center_y))
+
+        if c.continuous and self.state in ("ADVANCING", "DROPPING", "RETURNING"):
+            if self.circle_complete(now, x, y):
+                if self.pending_cycles < c.max_pending:
+                    self.pending_cycles += 1
+                    self.report(f"QUEUED: {self.pending_cycles} pending cycle(s).")
+                else:
+                    self.report("QUEUE FULL: this circle was not accepted; slow down.")
 
         if self.state == "ADVANCING" and now >= self.deadline:
             self.state = "DROPPING"
@@ -164,18 +181,24 @@ class Dispenser:
             else:
                 self.push_since = None
 
+        if c.continuous and self.state == "READY" and self.pending_cycles:
+            self.pending_cycles -= 1
+            self.advance(now)
+
     def finish_cycle(self):
         self.completed_cycles += 1
         c = self.config
         self.neutral_since = self.push_since = None
-        self.reset_circle()
-        if self.completed_cycles >= c.capacity:
+        if not c.continuous:
+            self.reset_circle()
+        if c.capacity and self.completed_cycles >= c.capacity:
             self.state = "EMPTY_ESTIMATE"
         elif c.mode == "direct" and self.completed_cycles >= c.direct_steps:
             self.state = "TRAVEL_LIMIT"
         else:
             self.state = "READY" if c.gesture == "circle" else "WAIT_NEUTRAL"
-        self.report(f"Cycle {self.completed_cycles}/{c.capacity}: {self.state}. "
+        capacity_label = str(c.capacity) if c.capacity else "unlimited"
+        self.report(f"Cycle {self.completed_cycles}/{capacity_label}: {self.state}. "
                     "Sugar drop has not been sensed.")
 
 
@@ -188,7 +211,7 @@ def simulate(config):
         for _ in range(25):
             controller.tick(now, config.center_x, config.center_y)
             now += 0.02
-        for _ in range(config.capacity + 1):
+        for _ in range((config.capacity or 5) + 1):
             for i in range(121):
                 angle = math.tau * i / 120
                 x = config.center_x + round(400 * math.sin(angle)) * config.x_sign
@@ -229,12 +252,20 @@ def run_hardware(config):
 
     controller = Dispenser(config, write_pulse)
     try:
+        if config.continuous:
+            print("CONTINUOUS EMPTY TEST: each full circle advances then returns. "
+                  "No inventory stop; button clears queued requests and stops.")
+        print(f"Channel {config.channel}: {config.home_ms:.3f} -> "
+              f"{config.home_ms + config.step_ms:.3f} ms; "
+              f"mode={config.mode}, gesture={config.gesture}.")
         input("Empty/unload the mechanism before homing; Enter to initialize: ")
         # restart() sets 50 Hz and resets the HAT; don't share it with another app.
         hat.restart()
         write_pulse(config.home_ms)
         time.sleep(config.move_seconds)
-        input("Align wheel at a non-drop position, load cubes; Enter to run: ")
+        input("Keep mechanism EMPTY for continuous test; Enter to run: "
+              if config.continuous else
+              "Align wheel at a non-drop position, load cubes; Enter to run: ")
         print("Trace a full clockwise circle for one cycle."
               if config.gesture == "circle" else "Push once, then return to center.")
         print("Press stick button or Ctrl+C to stop.")
@@ -267,18 +298,23 @@ def main():
     parser.add_argument("--hardware", action="store_true",
                         help="use Pi hardware; default is a simulation")
     parser.add_argument("--mode", choices=("direct", "ratchet"), default="direct")
+    parser.add_argument("--continuous", action="store_true",
+                        help="unlimited empty advance/return test; queues up to four circles")
     parser.add_argument("--gesture", choices=("circle", "push"), default="circle")
     parser.add_argument("--x-sign", type=int, choices=(-1, 1), default=1)
     parser.add_argument("--y-sign", type=int, choices=(-1, 1), default=1)
     parser.add_argument("--channel", type=int, default=1)
-    parser.add_argument("--home-ms", type=float, default=1.0)
-    parser.add_argument("--step-ms", type=float, default=1.0)
-    parser.add_argument("--limit-ms", type=float, default=2.0)
+    parser.add_argument("--home-ms", type=float, default=0.875)
+    parser.add_argument("--step-ms", type=float, default=1.25)
+    parser.add_argument("--limit-ms", type=float, default=2.125)
     parser.add_argument("--capacity", type=int, default=4)
     parser.add_argument("--center-x", type=int, default=508)
     parser.add_argument("--center-y", type=int, default=510)
     args = vars(parser.parse_args())
     hardware = args.pop("hardware")
+    if args["continuous"]:
+        args["mode"] = "ratchet"
+        args["capacity"] = 0
     try:
         config = Config(**args)
         run_hardware(config) if hardware else simulate(config)
