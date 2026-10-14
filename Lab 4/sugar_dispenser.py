@@ -14,6 +14,9 @@ import time
 @dataclass(frozen=True)
 class Config:
     mode: str = "direct"
+    gesture: str = "circle"
+    x_sign: int = 1
+    y_sign: int = 1
     channel: int = 1
     home_ms: float = 1.0
     step_ms: float = 1.0
@@ -31,6 +34,8 @@ class Config:
     def __post_init__(self):
         if self.mode not in ("direct", "ratchet") or not 0 <= self.channel < 16:
             raise ValueError("Invalid mechanism mode or servo channel")
+        if self.gesture not in ("circle", "push") or self.x_sign not in (-1, 1) or self.y_sign not in (-1, 1):
+            raise ValueError("Invalid gesture or joystick orientation")
         values = (self.home_ms, self.step_ms, self.limit_ms,
                   self.neutral_seconds, self.trigger_seconds,
                   self.move_seconds, self.drop_seconds)
@@ -64,6 +69,52 @@ class Dispenser:
         self.deadline = 0.0
         self.neutral_since = None
         self.push_since = None
+        self.circle_angle = None
+        self.circle_time = None
+        self.circle_progress = 0.0
+
+    def reset_circle(self):
+        self.circle_angle = self.circle_time = None
+        self.circle_progress = 0.0
+
+    def circle_complete(self, now, x, y):
+        c = self.config
+        dx = (x - c.center_x) * c.x_sign
+        dy = (y - c.center_y) * c.y_sign
+        if math.hypot(dx, dy) < c.trigger_threshold:
+            self.reset_circle()
+            return False
+        # With X increasing right and Y increasing down: top -> right is CW.
+        angle = math.atan2(dx, -dy)
+        if self.circle_angle is not None:
+            delta = (angle - self.circle_angle + math.pi) % math.tau - math.pi
+            if now - self.circle_time > 0.25 or abs(delta) > math.pi / 4:
+                # Lost samples or jumps between directions aren't a traced circle.
+                self.reset_circle()
+            else:
+                # Signed accumulation: retracing a path cancels its forward travel.
+                self.circle_progress += delta
+                if self.circle_progress >= math.tau - 1e-9:
+                    self.reset_circle()
+                    return True
+                if self.circle_progress <= -math.tau:
+                    self.reset_circle()
+        self.circle_angle = angle
+        self.circle_time = now
+        return False
+
+    def advance(self, now):
+        c = self.config
+        step = self.completed_cycles + 1 if c.mode == "direct" else 1
+        target = c.home_ms + step * c.step_ms
+        if target > c.limit_ms + 1e-9:
+            raise ValueError("Servo target exceeds calibrated limit")
+        self.write_pulse(min(target, c.limit_ms))
+        self.state = "ADVANCING"
+        self.deadline = now + c.move_seconds
+        self.push_since = self.neutral_since = None
+        self.reset_circle()
+        self.report("ADVANCING: gesture accepted; further input ignored.")
 
     def tick(self, now, x, y, button=1):
         if self.state == "STOPPED":
@@ -95,24 +146,21 @@ class Dispenser:
                     self.neutral_since = now
                 if now - self.neutral_since >= c.neutral_seconds:
                     self.state = "READY"
-                    self.report("READY: move stick in any direction for one cycle.")
+                    self.report("READY: trace a full clockwise circle for one cycle."
+                                if c.gesture == "circle" else
+                                "READY: move stick in any direction for one cycle.")
             else:
                 self.neutral_since = None
         elif self.state == "READY":
+            if c.gesture == "circle":
+                if self.circle_complete(now, x, y):
+                    self.advance(now)
+                return
             if distance >= c.trigger_threshold:
                 if self.push_since is None:
                     self.push_since = now
                 if now - self.push_since >= c.trigger_seconds:
-                    step = self.completed_cycles + 1 if c.mode == "direct" else 1
-                    target = c.home_ms + step * c.step_ms
-                    if target > c.limit_ms + 1e-9:
-                        raise ValueError("Servo target exceeds calibrated limit")
-                    self.write_pulse(min(target, c.limit_ms))
-                    self.state = "ADVANCING"
-                    self.deadline = now + c.move_seconds
-                    self.push_since = None
-                    self.neutral_since = None
-                    self.report("ADVANCING: gesture accepted; further input ignored.")
+                    self.advance(now)
             else:
                 self.push_since = None
 
@@ -120,12 +168,13 @@ class Dispenser:
         self.completed_cycles += 1
         c = self.config
         self.neutral_since = self.push_since = None
+        self.reset_circle()
         if self.completed_cycles >= c.capacity:
             self.state = "EMPTY_ESTIMATE"
         elif c.mode == "direct" and self.completed_cycles >= c.direct_steps:
             self.state = "TRAVEL_LIMIT"
         else:
-            self.state = "WAIT_NEUTRAL"
+            self.state = "READY" if c.gesture == "circle" else "WAIT_NEUTRAL"
         self.report(f"Cycle {self.completed_cycles}/{c.capacity}: {self.state}. "
                     "Sugar drop has not been sensed.")
 
@@ -135,13 +184,32 @@ def simulate(config):
     pulses = []
     controller = Dispenser(config, lambda p: pulses.append(p))
     now = 0.0
+    if config.gesture == "circle":
+        for _ in range(25):
+            controller.tick(now, config.center_x, config.center_y)
+            now += 0.02
+        for _ in range(config.capacity + 1):
+            for i in range(121):
+                angle = math.tau * i / 120
+                x = config.center_x + round(400 * math.sin(angle)) * config.x_sign
+                y = config.center_y - round(400 * math.cos(angle)) * config.y_sign
+                controller.tick(now, x, y)
+                now += 0.02
+            for _ in range(100):
+                controller.tick(now, config.center_x, config.center_y)
+                now += 0.02
+    else:
+        simulate_push(controller, config, now)
+    print(f"SIMULATION ONLY: completed={controller.completed_cycles}, "
+          f"state={controller.state}, pulse commands={pulses}")
+
+
+def simulate_push(controller, config, now):
     for _ in range(config.capacity + 1):
         for x, duration in ((config.center_x, 0.5), (1023, 3.0)):
             for _ in range(round(duration / 0.02)):
                 controller.tick(now, x, config.center_y)
                 now += 0.02
-    print(f"SIMULATION ONLY: completed={controller.completed_cycles}, "
-          f"state={controller.state}, pulse commands={pulses}")
 
 
 def run_hardware(config):
@@ -167,7 +235,9 @@ def run_hardware(config):
         write_pulse(config.home_ms)
         time.sleep(config.move_seconds)
         input("Align wheel at a non-drop position, load cubes; Enter to run: ")
-        print("Push once, then return to center. Press stick button or Ctrl+C to stop.")
+        print("Trace a full clockwise circle for one cycle."
+              if config.gesture == "circle" else "Push once, then return to center.")
+        print("Press stick button or Ctrl+C to stop.")
         while controller.state != "STOPPED":
             # Read the stop button first, including while the servo is moving.
             button = joystick.button
@@ -182,9 +252,11 @@ def run_hardware(config):
         # Disable ONLY this channel's PWM; never rewind a loaded direct-drive wheel.
         # This removes the control signal, not electrical power or mechanical motion.
         # The older pi_servo_hat implementation maps 0% duty to -1 ticks.
-        # Use PCA9685 LEDn_OFF bit 12 (full-off) explicitly instead.
+        # Its set_channel_word helper also rejects bit 12 (>4095), so write
+        # LEDn_OFF's full-off word through the existing driver after enabling AI.
         hat.PCA9685.set_channel_word(config.channel, 1, 0)
-        hat.PCA9685.set_channel_word(config.channel, 0, 0x1000)
+        hat.PCA9685._i2c.writeWord(hat.PCA9685.address,
+                                 0x08 + 4 * config.channel, 0x1000)
         print(f"PWM disabled on channel {config.channel}; "
               f"completed command cycles={controller.completed_cycles}. "
               "Inspect position and unload before restart.")
@@ -195,6 +267,9 @@ def main():
     parser.add_argument("--hardware", action="store_true",
                         help="use Pi hardware; default is a simulation")
     parser.add_argument("--mode", choices=("direct", "ratchet"), default="direct")
+    parser.add_argument("--gesture", choices=("circle", "push"), default="circle")
+    parser.add_argument("--x-sign", type=int, choices=(-1, 1), default=1)
+    parser.add_argument("--y-sign", type=int, choices=(-1, 1), default=1)
     parser.add_argument("--channel", type=int, default=1)
     parser.add_argument("--home-ms", type=float, default=1.0)
     parser.add_argument("--step-ms", type=float, default=1.0)

@@ -1,6 +1,7 @@
 """Control logic checks; these do not verify motion or actual sugar drops."""
 
 import unittest
+import math
 from unittest.mock import Mock, PropertyMock, patch
 from types import SimpleNamespace
 from sugar_dispenser import Config, Dispenser, run_hardware
@@ -10,7 +11,7 @@ class DispenserTests(unittest.TestCase):
     def setUp(self):
         self.pulses = []
         self.now = 0.0
-        self.app = Dispenser(Config(mode="ratchet"), self.pulses.append,
+        self.app = Dispenser(Config(mode="ratchet", gesture="push"), self.pulses.append,
                              lambda _: None)
 
     def sample_for(self, x, seconds, button=1):
@@ -62,14 +63,14 @@ class DispenserTests(unittest.TestCase):
         self.assertEqual(len(self.pulses), 8)
 
     def test_direct_drive_does_not_wrap_or_return(self):
-        self.app = Dispenser(Config(), self.pulses.append, lambda _: None)
+        self.app = Dispenser(Config(gesture="push"), self.pulses.append, lambda _: None)
         for _ in range(4):
             self.gesture()
         self.assertEqual(self.pulses, [2.0])
         self.assertEqual(self.app.state, "TRAVEL_LIMIT")
 
     def test_direct_drive_can_use_multiple_calibrated_strokes(self):
-        self.app = Dispenser(Config(step_ms=0.5), self.pulses.append,
+        self.app = Dispenser(Config(step_ms=0.5, gesture="push"), self.pulses.append,
                              lambda _: None)
         for _ in range(4):
             self.gesture()
@@ -114,6 +115,8 @@ class DispenserTests(unittest.TestCase):
                     # A stop should be handled before attempting either axis read.
                     type(joystick).horizontal = PropertyMock(side_effect=AssertionError)
                 hat = Mock()
+                hat.PCA9685.address = 0x40
+                hat.PCA9685.set_channel_word.side_effect = lambda ch, on, value: 0 <= value <= 4095
                 modules = {
                     "qwiic_joystick": SimpleNamespace(QwiicJoystick=lambda: joystick),
                     "pi_servo_hat": SimpleNamespace(PiServoHat=lambda **_: hat),
@@ -129,8 +132,94 @@ class DispenserTests(unittest.TestCase):
                 # Homing is the only positive pulse; no shutdown return stroke.
                 hat.set_duty_cycle.assert_called_once_with(1, 5.0)
                 self.assertEqual(hat.PCA9685.set_channel_word.call_args_list,
-                                 [unittest.mock.call(1, 1, 0),
-                                  unittest.mock.call(1, 0, 0x1000)])
+                                 [unittest.mock.call(1, 1, 0)])
+                hat.PCA9685._i2c.writeWord.assert_called_once_with(0x40, 0x0C, 0x1000)
+
+
+class CircleTests(unittest.TestCase):
+    def setUp(self):
+        self.pulses = []
+        self.app = Dispenser(Config(mode="ratchet"), self.pulses.append,
+                             lambda _: None)
+        self.now = 0.0
+        self.center(0.5)
+
+    def center(self, seconds):
+        for _ in range(round(seconds / 0.02)):
+            self.app.tick(self.now, 508, 510)
+            self.now += 0.02
+
+    def arc(self, start, end, samples=121):
+        for i in range(samples):
+            angle = math.radians(start + (end - start) * i / (samples - 1))
+            self.app.tick(self.now, 508 + round(400 * math.sin(angle)),
+                          510 - round(400 * math.cos(angle)))
+            self.now += 0.02
+
+    def test_full_clockwise_circle_triggers_once(self):
+        self.arc(0, 360)
+        self.assertEqual(self.pulses, [2.0])
+        self.center(2)
+        self.assertEqual(self.app.completed_cycles, 1)
+
+    def test_quarter_and_half_circle_do_not_trigger(self):
+        self.arc(0, 90)
+        self.arc(90, 180)
+        self.assertEqual(self.pulses, [])
+
+    def test_counterclockwise_circles_do_not_trigger(self):
+        self.arc(0, -720, samples=241)
+        self.assertEqual(self.pulses, [])
+
+    def test_backtracking_cancels_forward_progress(self):
+        for _ in range(5):
+            self.arc(0, 180)
+            self.arc(180, 0)
+        self.assertEqual(self.pulses, [])
+
+    def test_center_breaks_incomplete_circle(self):
+        self.arc(0, 180)
+        self.center(0.1)
+        self.arc(180, 360)
+        self.assertEqual(self.pulses, [])
+
+    def test_holding_direction_does_not_repeat(self):
+        self.arc(0, 360)
+        for _ in range(500):
+            self.app.tick(self.now, 508, 110)
+            self.now += 0.02
+        self.assertEqual(self.app.completed_cycles, 1)
+
+    def test_jump_or_lost_sample_does_not_join_arcs(self):
+        self.arc(0, 180)
+        self.now += 1
+        self.arc(180, 360)
+        self.assertEqual(self.pulses, [])
+        self.center(0.1)
+        self.arc(0, 360, samples=5)
+        self.assertEqual(self.pulses, [])
+
+    def test_four_circles_reach_inventory_lockout(self):
+        for _ in range(6):
+            self.arc(0, 360)
+            self.center(2)
+        self.assertEqual(self.app.completed_cycles, 4)
+        self.assertEqual(self.app.state, "EMPTY_ESTIMATE")
+
+    def test_direct_mode_still_locks_at_travel_limit(self):
+        self.app = Dispenser(Config(), self.pulses.append, lambda _: None)
+        self.center(0.5)
+        for _ in range(3):
+            self.arc(0, 360)
+            self.center(2)
+        self.assertEqual(self.pulses, [2.0])
+        self.assertEqual(self.app.state, "TRAVEL_LIMIT")
+
+    def test_circle_while_busy_is_not_queued(self):
+        self.arc(0, 360)
+        self.arc(0, 360, samples=31)
+        self.center(2)
+        self.assertEqual(self.app.completed_cycles, 1)
 
 
 if __name__ == "__main__":
