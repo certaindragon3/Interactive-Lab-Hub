@@ -470,9 +470,9 @@ Iterate on the sensing, movement, and physical form, and document what you disco
 >
 > ![Two-slot rotator attached to the micro servo beside the Qwiic joystick](images/servo-rotator-joystick.png)
 >
-> https://github.com/user-attachments/assets/7a4d4f7d-31b5-46bf-9580-965338ee3dcd
+> https://github.com/user-attachments/assets/81d6da97-3d35-4f37-8aa2-4dcf771754c9
 >
-> [Watch or download the MP4](assets/video/sugar-cube-dropper-demo.mp4) · 25.4 seconds · [Original recording](assets/video/working-prototype-original.mp4)
+> [Watch or download the landscape MP4](assets/video/sugar-cube-dropper-demo-landscape.mp4) · 25.4 seconds · [Original recording](assets/video/working-prototype-original.mp4)
 >
 > The demonstration shows joystick operation and the mounted rotator releasing cubes toward the cup. The video retains the full recording duration and original audio. The feeding and outlet limitations are discussed below.
 >
