@@ -19,9 +19,11 @@
 ---
 
 ## Lab Overview
-Team: <canvas group name>  
-Members: Full Name (netid, github-handle), ...  
-Clock name: <name>
+> Team: Jiesen Huang, Serena Tsai, and Terence Zhang
+>
+> Members: Jiesen Huang ([certaindragon3](https://github.com/certaindragon3)), Serena Tsai (ht534, [ht534-ui](https://github.com/ht534-ui)), and Terence Zhang ([TerenceZhang29](https://github.com/TerenceZhang29))
+>
+> Project name: Sugar Cube Dropper
 
 
 For lab this week, we focus on both sensing and actuation, bringing new modes of input and output into your devices, while also prototyping the physical structure and overall look of the device. You will consider how the physical form supports sensing and actuation, and how these elements come together to shape the interaction and aesthetics of the device.
@@ -291,6 +293,8 @@ A servo motor is a rotary actuator that allows for precise control of angular po
 ### Part D
 ### Physical Interaction Design: Feast Automata
 
+> The development notes below record earlier iterations. The tested prototype and current limitations are documented in Part E.
+>
 > **October 18 iteration — two-slot ring:** I replaced the proposed four-compartment mechanism with a ring having slots at opposite ends and requested a 180° movement between releases. The new `--ring-180` test alternates between two endpoints: one full clockwise joystick circle moves to the opposite endpoint, and the next accepted circle moves back. It holds each endpoint and does not automatically return after a request, avoiding an extra unrequested pass across the outlet. Whether either direction actually releases exactly one cube still needs testing.
 >
 > Start the mounted-ring test on Orange with `python sugar_dispenser.py --hardware --ring-180 --channel 1`. The initial test uses an empty ring, a provisional 0.5–2.4 ms pulse range, and a three-second linear command ramp followed by settling time. The joystick button stops motion without rewinding. Startup commands center first and then approaches the starting endpoint; it does not measure the shaft position. Pulses are based on a [firsthand MS18 test reporting approximately 180° over this range](https://qiita.com/shuji4649/items/3f7220cf27f75b0a576f), not a measured calibration of this assembly. Movement and clearance must be observed before loading sugar. During this initial test, circles traced while moving are ignored; wait until the ring stops before the next circle. The earlier four-slot and unloaded-test iterations remain below for context.
@@ -402,6 +406,85 @@ For Part 2, build the Feast Automata interaction you developed in Part D by conn
 - What changes when you adjust the sensor placement or servo motion?
 
 Iterate on the sensing, movement, and physical form, and document what you discover.
+
+> #### Our Integrated Prototype: Joystick Sugar Cube Dropper
+>
+> Our prototype turns requesting sugar into a deliberate circular gesture. The user rotates a Qwiic joystick through one complete clockwise circle. A Raspberry Pi reads both axes and commands a Miuzei MS18 servo on Servo pHAT channel 1 to move the two-slot rotator to its opposite endpoint, approximately a half-turn. The next accepted circle moves it back. The servo holds each endpoint instead of automatically returning across the outlet after the same request.
+>
+> The mounted interaction was tested successfully on Orange. Our three team members then took turns using the device and found that complete circles reliably triggered the delivery action. The current demonstration still requires manual feeding from above: the printed hopper does not yet meter cubes automatically into the rotator. The outlet can also catch a cube. These mechanical limitations are part of the tested prototype, rather than completed features of an automatic dispenser.
+>
+> | Stage | Input or state | Response |
+> |---|---|---|
+> | Startup | Empty mechanism; joystick centered for 0.2 seconds | Servo initializes, then the program becomes ready |
+> | Gesture | User traces a full clockwise circle away from center | The program accumulates the angle from both axes |
+> | Movement | One complete circle is recognized | The rotator slowly moves to the opposite endpoint and holds |
+> | Delivery | A cube is manually fed into the mechanism | Gravity carries it toward the cup if the pocket and bottom outlet are clear |
+> | Next request | The previous movement and waiting periods finish | A new complete circle requests a half-turn in the other direction |
+> | Stop | User presses the joystick button | Motion stops and the channel's PWM is disabled without rewinding |
+>
+> ```mermaid
+> flowchart TD
+>     A[Full clockwise joystick circle] --> B[X and Y angle accumulation]
+>     B --> C[One slow half-turn command]
+>     C --> D[Hold the opposite endpoint]
+>     D --> E[Ready for a new full circle]
+>     E --> A
+>     M[Manual sugar feed] --> N[Rotator pocket and bottom outlet]
+>     C --> N
+>     N --> P[Cube falls toward the cup if the path is clear]
+> ```
+>
+> #### Code
+>
+> The working implementation is [sugar_dispenser.py](sugar_dispenser.py). Its state-machine checks are in [test_sugar_dispenser.py](test_sugar_dispenser.py), and the hardware packages are listed in [requirements2025.txt](requirements2025.txt). The 35 automated checks cover gesture recognition, movement limits, alternating endpoints, gradual motion, and stopping; they are separate from the three-person usability testing described below.
+>
+> The joystick reports 10-bit X/Y readings. We use the observed center, approximately `(508, 510)`, as the origin and compute the angle around that point. Small signed angular changes are added until they reach one clockwise revolution. Reversing direction subtracts from the accumulated angle; returning inside the circle's minimum radius cancels an incomplete gesture. Holding one direction does not accumulate a circle.
+>
+> | Setting in the tested implementation | Value and purpose |
+> |---|---|
+> | Startup neutral range | Both axes within 100 counts of their center for 0.2 seconds |
+> | Minimum circle radius | 300 counts from the center, using both axes together |
+> | Trigger | One accumulated clockwise revolution, or `2π` radians |
+> | Discontinuity checks | Reset progress after a gap over 0.25 seconds or an angular jump over 45° |
+> | Polling pause | 0.02 seconds between input-loop iterations |
+> | Servo connection | Channel 1 on the separately powered SparkFun Servo pHAT |
+> | Half-turn command range | 0.5–2.4 ms pulses at nominally 50 Hz; mechanical alignment is checked on the device |
+> | Movement timing | A 3-second gradual ramp, followed by 0.6 seconds settling and 0.5 seconds release waiting |
+> | Two-slot behavior | Alternate endpoints once per request; no automatic return and no four-cube software stop |
+> | Input during movement | Ignored in the final `--ring-180` mode; wait until the rotator stops before the next circle |
+>
+> To run the final two-slot mechanism on Orange, use its existing Lab 4 environment:
+>
+> ```bash
+> cd "/home/pi/Interactive-Lab-Hub/Lab 4"
+> .venv/bin/python sugar_dispenser.py --hardware --ring-180 --channel 1
+> ```
+>
+> Start with the ring empty so startup positioning and clearance can be checked. The joystick button or `Ctrl+C` stops the program. A desktop simulation is available with `python3 sugar_dispenser.py --ring-180`; it does not operate hardware. The earlier `--continuous` mode is an unloaded advance-and-return experiment, not the final two-slot dispensing mode.
+>
+> Returning to neutral is required at startup, but the final program does not require a center return after every completed serving. Once movement finishes, it accepts a fresh complete circle. Its counter records completed motion commands; there is no sensor confirming that a cube reached the cup.
+>
+> #### Working Prototype Evidence
+>
+> ![Mounted 3D-printed sugar dispenser with the storage section above the rotator](images/final-housing.png)
+>
+> ![Two-slot rotator attached to the micro servo beside the Qwiic joystick](images/servo-rotator-joystick.png)
+>
+> [Team demonstration video on Google Drive](https://drive.google.com/file/d/1h8bf5-Ks-bC1W4nmB9jm69nvbywwYkT4/view?usp=drive_link)
+>
+> #### Written Reflection: Usability Testing and Next Iteration
+>
+> **Usability testing.** The three members of our team took turns using the assembled device. Each person used the joystick to request sugar and observed the rotator's response. This was informal, formative usability testing during development. It helped us check whether the gesture-to-movement connection was reliable and whether the device responded at a comfortable pace. It also made the remaining feeding and delivery problems visible in the actual assembly.
+>
+> **Input.** We kept the current joystick thresholds because completing a circle reliably triggered the delivery action during our trials. Reading X and Y together matters: a change in one axis does not establish that someone has completed a circular motion. The center range and minimum radius give the program a way to separate a deliberate circle from movement near the resting position. Our qualitative observations supported retaining these settings for this prototype.
+>
+> **Output.** We also retained the existing 3-second servo movement. All three of us tried the current interaction, and we were satisfied with its stability and dispensing speed. We wanted the rotation to feel deliberate without creating an unnecessarily long wait, while avoiding an abrupt movement that could disturb the sugar. We kept that timing and focused our next iteration on the feeder and outlet. The program also leaves settling and release time before accepting another request. Alternating endpoints was important for the two-slot design: returning automatically after one request would send the mechanism back across the outlet before the user had requested another serving.
+>
+> **The feeder did not match the intended geometry.** Our intended mechanism had two opposite sugar-cube pockets. During a 180° turn, the solid section between the pockets was supposed to block the storage opening. Only when the empty lower pocket reached the top would another cube fall into it. The printed pockets were longer than we intended, and the storage compartment had no partition extending down to the rotator. There was also a vertical gap between them. As a result, the rotator's solid section could not actually close the path from the storage compartment. During the demonstration we manually fed sugar from above. The gesture and servo movement worked, but automatic replenishment from the hopper remains an unfinished part of the design.
+>
+> **The bottom of the housing could trap a cube.** We also found that the opening below the rotator was too small. This was a problem with the housing's lower floor, not the pockets on the rotating part. A cube could land on the remaining bottom partition and stay there instead of falling directly into the coffee cup. Our next version should open the entire intended fall path beneath the rotator. Any structural support should sit outside that path so the housing supports the mechanism without becoming a shelf that catches sugar.
+>
+> **Next iteration.** We would keep the current gesture thresholds and timing while first correcting those mechanical interfaces. A stationary feed guide or partition should reach close enough to the rotator for its solid section to block the storage opening. We would also shorten the pockets to the intended single-cube geometry and enlarge the housing's bottom outlet. Before printing another complete enclosure, we could test a removable feeder insert and an open-bottom mock-up with real cubes. That would let us check automatic loading and release in both directions at lower cost. Because all three testers helped build the device, a later usability test should also include someone unfamiliar with it and record missed gestures, cubes caught at the outlet, and how much guidance they need.
 
 See encoder_accel_servo_dashboard.py in the Lab 4 folder for an optional example of chaining together three devices.
 
@@ -561,6 +644,48 @@ This is a playful way to visualize how the expander works, but the same techniqu
 
 ### Final Documentation
 
+> #### Sugar Cube Dropper: Final Interaction
+>
+> The Sugar Cube Dropper turns adding sugar into a small physical ritual: a full clockwise joystick circle requests a half-turn of a servo-driven rotator. The tested version uses two pockets at opposite ends of the rotator and alternates between endpoints. We manually feed sugar from above because the current storage compartment does not yet meter cubes into those pockets automatically.
+>
+> #### Looks Like
+>
+> The prototype has a black 3D-printed housing with a storage compartment above a cylindrical rotator and an outlet below. Its open front exposes the mechanism. The Raspberry Pi, Servo pHAT, and separate joystick sit beside it. In the prototype setup, the housing is positioned at the table edge so a cup can be placed beneath the outlet.
+>
+> ![Dispenser and electronics arranged for testing at the edge of the table](images/prototype-setup.png)
+>
+> #### Design Iterations
+>
+> The early concept combined cup detection with a timed gate. We explored a rotating mechanism in cardboard, then developed the housing, feeder, and servo placement in CAD before assembling the printed two-slot rotator. The final input became a deliberate joystick circle.
+>
+> ![Early cardboard prototype mounted beside the Servo pHAT](images/cardboard_prototype_8418.jpg)
+>
+> ![Side view of the early cardboard mechanism](images/cardboard_prototype_8419.jpg)
+>
+> ![Top view of the early cardboard mechanism](images/cardboard_prototype_8420.jpg)
+>
+> ![Initial CAD study of the dispenser, backboard, and cup position](images/cad-backboard.png)
+>
+> ![CAD study of a sloped hopper and side-mounted servo](images/cad-hopper-servo.png)
+>
+> These cardboard and CAD images document earlier explorations. The mounted printed mechanism is shown in Part E. Its working feed and outlet geometry still differ from the intended automatic path, as discussed in the reflection.
+>
+> #### Works Like
+>
+> X/Y joystick readings describe movement around the center. The program recognizes a complete clockwise circle, slowly turns the rotator to the opposite endpoint, and holds there. Once that movement and its waiting periods finish, another full circle requests the reverse half-turn. A cube can then travel toward the cup through the rotator and bottom opening, with manual feeding and occasional outlet obstruction as current limitations.
+>
+> #### Acts Like
+>
+> The user places a cup below the outlet and draws a full clockwise circle with the joystick. The circular action feels like operating a small serving machine. The user waits for the rotator to stop before requesting another cube. Releasing the joystick between requests is a natural way to separate gestures, although the code requires a centered stick only at startup. A team member currently supplies sugar manually from above.
+>
+> | Prototype lens | What the current prototype demonstrates |
+> |---|---|
+> | Looks like | A printed housing, storage compartment, two-slot rotator, bottom outlet, joystick, and connected electronics |
+> | Works like | A complete clockwise circle triggers one alternating half-turn; automatic hopper metering remains unfinished |
+> | Acts like | A person requests sugar with a circular gesture, observes the movement, and waits for it to finish before the next request |
+>
+> [Shared team documentation and source photos/CAD screenshots](https://github.com/ht534-ui/Interactive-Lab-Hub/blob/9660ebe8c7c14faf5c7c3bc7a25abd46dd23778f/Lab%204/README.md) were synchronized from Serena's repository. The wording here has been checked against our implemented code and the feeding and outlet limitations observed during testing. [Team demonstration video](https://drive.google.com/file/d/1h8bf5-Ks-bC1W4nmB9jm69nvbywwYkT4/view?usp=drive_link).
+
 Document all the prototypes and iterations you have designed and worked on! Again, deliverables for this lab are writings, sketches, photos, and videos that show what your prototype:
 * "Looks like": shows how the device should look, feel, sit, weigh, etc.
 * "Works like": shows what the device can do
@@ -580,4 +705,4 @@ For submission, the readme.md page for this lab should be edited to include the 
 * Link your Lab 4 readme.md in your main Interactive-Lab-Hub readme.md. 
 * Labs are due on Mondays, make sure to submit your Lab 4 readme.md to Canvas.
 
-> **AI assistance:** Codex helped set up the isolated Python environment, run and summarize sensor checks over SSH, and draft these experiment notes. Codex also drafted the sugar-dispenser control program, local logic tests, and the proposed mechanism notes. I connected the hardware and performed the physical touch actions for the earlier sensor checks. The sugar-dispenser integration has not yet been tested on hardware. The notes distinguish observed readings from tests that have not been completed.
+> **AI assistance:** Codex helped set up the isolated Python environment, run and summarize sensor checks over SSH, and draft the experiment notes. Codex wrote and revised the sugar-dispenser Python control program and its automated logic tests, helped deploy and run it on Orange, and drafted the Code and Written Reflection sections using our actual implementation and reported observations. Codex also synchronized shared team documentation and image files from Serena's repository. Our team developed and assembled the physical prototype, connected the hardware, performed the hands-on tests, and identified the feeding and outlet problems. All three team members took turns trying the device. The report distinguishes team observations, automated checks, and proposed improvements.
