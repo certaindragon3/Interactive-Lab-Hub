@@ -470,7 +470,11 @@ Iterate on the sensing, movement, and physical form, and document what you disco
 >
 > ![Two-slot rotator attached to the micro servo beside the Qwiic joystick](images/servo-rotator-joystick.png)
 >
-> [Team demonstration video on Google Drive](https://drive.google.com/file/d/1h8bf5-Ks-bC1W4nmB9jm69nvbywwYkT4/view?usp=drive_link)
+> https://github.com/user-attachments/assets/7a4d4f7d-31b5-46bf-9580-965338ee3dcd
+>
+> [Watch or download the MP4](assets/video/sugar-cube-dropper-demo.mp4) · 25.4 seconds · [Original recording](assets/video/working-prototype-original.mp4)
+>
+> The demonstration shows joystick operation and the mounted rotator releasing cubes toward the cup. The video retains the full recording duration and original audio. The feeding and outlet limitations are discussed below.
 >
 > #### Written Reflection: Usability Testing and Next Iteration
 >
@@ -684,7 +688,7 @@ This is a playful way to visualize how the expander works, but the same techniqu
 > | Works like | A complete clockwise circle triggers one alternating half-turn; automatic hopper metering remains unfinished |
 > | Acts like | A person requests sugar with a circular gesture, observes the movement, and waits for it to finish before the next request |
 >
-> [Shared team documentation and source photos/CAD screenshots](https://github.com/ht534-ui/Interactive-Lab-Hub/blob/9660ebe8c7c14faf5c7c3bc7a25abd46dd23778f/Lab%204/README.md) were synchronized from Serena's repository. The wording here has been checked against our implemented code and the feeding and outlet limitations observed during testing. [Team demonstration video](https://drive.google.com/file/d/1h8bf5-Ks-bC1W4nmB9jm69nvbywwYkT4/view?usp=drive_link).
+> [Shared team documentation and source photos/CAD screenshots](https://github.com/ht534-ui/Interactive-Lab-Hub/blob/9660ebe8c7c14faf5c7c3bc7a25abd46dd23778f/Lab%204/README.md) were synchronized from Serena's repository. The wording here has been checked against our implemented code and the feeding and outlet limitations observed during testing. The [team demonstration video](#working-prototype-evidence) is embedded above with a GitHub native player and repository download copies.
 
 Document all the prototypes and iterations you have designed and worked on! Again, deliverables for this lab are writings, sketches, photos, and videos that show what your prototype:
 * "Looks like": shows how the device should look, feel, sit, weigh, etc.
