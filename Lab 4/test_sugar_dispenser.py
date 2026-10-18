@@ -4,7 +4,7 @@ import unittest
 import math
 from unittest.mock import Mock, PropertyMock, patch
 from types import SimpleNamespace
-from sugar_dispenser import Config, Dispenser, run_hardware
+from sugar_dispenser import Config, Dispenser, main, run_hardware
 
 
 class DispenserTests(unittest.TestCase):
@@ -78,7 +78,7 @@ class DispenserTests(unittest.TestCase):
         self.assertEqual(self.app.completed_cycles, 2)
 
     def test_stop_during_each_motion_phase_never_returns(self):
-        for phase in ("ADVANCING", "DROPPING", "RETURNING"):
+        for phase in ("RAMPING", "ADVANCING", "DROPPING", "RETURNING"):
             with self.subTest(phase=phase):
                 pulses = []
                 app = Dispenser(Config(mode="ratchet"), pulses.append,
@@ -94,7 +94,8 @@ class DispenserTests(unittest.TestCase):
         for kwargs in ({"step_ms": 0}, {"limit_ms": 3},
                        {"home_ms": 2, "limit_ms": 1},
                        {"step_ms": float("nan")}, {"channel": 16},
-                       {"capacity": -1}, {"move_seconds": -1}):
+                       {"capacity": -1}, {"move_seconds": -1},
+                       {"ramp_seconds": -1}, {"ramp_seconds": float("inf")}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 Config(**kwargs)
 
@@ -291,6 +292,80 @@ class ContinuousTests(unittest.TestCase):
         self.arc(180, 360, samples=31)
         self.center(10)
         self.assertEqual(self.app.completed_cycles, 2)
+
+
+class RingTests(unittest.TestCase):
+    center = CircleTests.center
+    arc = CircleTests.arc
+
+    def setUp(self):
+        self.pulses = []
+        self.now = 0.0
+        self.config = Config(mode="alternate", capacity=0, home_ms=0.5,
+                             step_ms=1.9, limit_ms=2.4, ramp_seconds=3)
+        self.app = Dispenser(self.config, self.pulses.append, lambda _: None)
+        self.center(0.5)
+
+    def test_first_circle_holds_far_endpoint_without_auto_return(self):
+        self.arc(0, 360)
+        self.center(6)
+        self.assertAlmostEqual(self.pulses[-1], 2.4)
+        self.assertEqual(self.app.completed_cycles, 1)
+        self.assertEqual(self.app.state, "READY")
+        before = list(self.pulses)
+        self.center(10)
+        self.assertEqual(self.pulses, before)
+
+    def test_next_circle_reverses_to_start_without_wrapping(self):
+        for _ in range(2):
+            self.arc(0, 360)
+            self.center(6)
+        self.assertAlmostEqual(self.pulses[-1], 0.5)
+        self.assertEqual(self.app.completed_cycles, 2)
+        self.assertEqual(self.app.state, "READY")
+
+    def test_ramp_is_gradual_bounded_and_monotonic(self):
+        self.arc(0, 360)
+        self.center(6)
+        self.assertGreater(len(self.pulses), 100)
+        self.assertTrue(all(0.5 <= p <= 2.4 for p in self.pulses))
+        self.assertTrue(all(a <= b for a, b in zip(self.pulses, self.pulses[1:])))
+        self.assertLess(max(b - a for a, b in zip(self.pulses, self.pulses[1:])), 0.02)
+
+    def test_stop_mid_ramp_prevents_remaining_motion(self):
+        self.arc(0, 360)
+        self.center(0.5)
+        self.assertEqual(self.app.state, "RAMPING")
+        self.app.tick(self.now, 508, 510, button=0)
+        before = list(self.pulses)
+        self.center(10)
+        self.assertEqual(self.pulses, before)
+        self.assertEqual(self.app.completed_cycles, 0)
+
+    def test_initial_ring_test_does_not_queue_busy_circles(self):
+        self.arc(0, 360)
+        self.arc(0, 360, samples=31)
+        self.center(6)
+        self.assertEqual(self.app.completed_cycles, 1)
+        self.assertEqual(self.app.pending_cycles, 0)
+
+    def test_ring_can_run_more_than_four_separate_requests(self):
+        for _ in range(6):
+            self.arc(0, 360)
+            self.center(6)
+        self.assertEqual(self.app.completed_cycles, 6)
+        self.assertAlmostEqual(self.pulses[-1], 0.5)
+
+    def test_cli_profile_selects_slow_alternating_motion(self):
+        with patch("sys.argv", ["sugar_dispenser.py", "--ring-180"]), \
+             patch("sugar_dispenser.simulate") as simulation:
+            main()
+        config = simulation.call_args.args[0]
+        self.assertEqual(config.mode, "alternate")
+        self.assertEqual((config.home_ms, config.step_ms, config.limit_ms), (0.5, 1.9, 2.4))
+        self.assertEqual(config.capacity, 0)
+        self.assertFalse(config.continuous)
+        self.assertEqual(config.ramp_seconds, 3)
 
 
 if __name__ == "__main__":

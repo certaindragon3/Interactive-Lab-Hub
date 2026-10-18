@@ -3,6 +3,8 @@
 Direct drive has a finite stroke budget. Ratchet mode requires a physical
 one-way indexing mechanism: servo return must NOT turn the sugar wheel back.
 Pulse widths are calibration inputs, never measured shaft angles.
+Alternate mode holds the opposite endpoint after each request; it never
+automatically returns a two-slot ring across the outlet.
 """
 
 import argparse
@@ -32,24 +34,25 @@ class Config:
     trigger_seconds: float = 0.08
     move_seconds: float = 0.6
     drop_seconds: float = 0.5
+    ramp_seconds: float = 0.0
 
     def __post_init__(self):
-        if self.mode not in ("direct", "ratchet") or not 0 <= self.channel < 16:
+        if self.mode not in ("direct", "ratchet", "alternate") or not 0 <= self.channel < 16:
             raise ValueError("Invalid mechanism mode or servo channel")
         if self.gesture not in ("circle", "push") or self.x_sign not in (-1, 1) or self.y_sign not in (-1, 1):
             raise ValueError("Invalid gesture or joystick orientation")
-        if self.continuous and (self.mode != "ratchet" or self.gesture != "circle" or self.capacity != 0):
-            raise ValueError("Continuous test requires ratchet motion, circles, and capacity=0")
+        if self.continuous and (self.mode not in ("ratchet", "alternate") or self.gesture != "circle" or self.capacity != 0):
+            raise ValueError("Continuous test requires repeatable motion, circles, and capacity=0")
         values = (self.home_ms, self.step_ms, self.limit_ms,
                   self.neutral_seconds, self.trigger_seconds,
-                  self.move_seconds, self.drop_seconds)
+                  self.move_seconds, self.drop_seconds, self.ramp_seconds)
         if not all(math.isfinite(v) for v in values):
             raise ValueError("Calibration and timing must be finite")
         if not (0.5 <= self.home_ms < self.limit_ms <= 2.5):
             raise ValueError("Require 0.5 <= home_ms < limit_ms <= 2.5")
         if not 0 < self.step_ms <= self.limit_ms - self.home_ms + 1e-9:
             raise ValueError("Step must fit within the calibrated pulse range")
-        if self.capacity < 0 or self.max_pending < 1 or min(values[3:]) <= 0:
+        if self.capacity < 0 or self.max_pending < 1 or min(values[3:-1]) <= 0 or self.ramp_seconds < 0:
             raise ValueError("Capacity must be nonnegative; queue size and timing positive")
         if not (0 <= self.center_x <= 1023 and 0 <= self.center_y <= 1023):
             raise ValueError("Joystick center must be in 0..1023")
@@ -62,7 +65,7 @@ class Config:
 
 
 class Dispenser:
-    """Deterministic state machine. tick() never sleeps or queues gestures."""
+    """Nonblocking state machine; optional queue counts complete circles only."""
 
     def __init__(self, config, write_pulse, report=print):
         self.config = config
@@ -77,6 +80,16 @@ class Dispenser:
         self.circle_angle = None
         self.circle_time = None
         self.circle_progress = 0.0
+        self.commanded_ms = config.home_ms
+        self.motion_start_ms = config.home_ms
+        self.motion_target_ms = config.home_ms
+        self.motion_started = 0.0
+
+    def command(self, pulse_ms):
+        if not self.config.home_ms - 1e-9 <= pulse_ms <= self.config.limit_ms + 1e-9:
+            raise ValueError("Servo command outside configured range")
+        self.write_pulse(pulse_ms)
+        self.commanded_ms = pulse_ms
 
     def reset_circle(self):
         self.circle_angle = self.circle_time = None
@@ -112,17 +125,29 @@ class Dispenser:
         c = self.config
         step = self.completed_cycles + 1 if c.mode == "direct" else 1
         target = c.home_ms + step * c.step_ms
+        if c.mode == "alternate" and self.completed_cycles % 2:
+            target = c.home_ms
         if target > c.limit_ms + 1e-9:
             raise ValueError("Servo target exceeds calibrated limit")
-        self.write_pulse(min(target, c.limit_ms))
-        self.state = "ADVANCING"
-        self.deadline = now + c.move_seconds
+        self.motion_start_ms = self.commanded_ms
+        self.motion_target_ms = min(target, c.limit_ms)
+        self.motion_started = now
+        if c.ramp_seconds:
+            self.state = "RAMPING"
+            self.deadline = now + c.ramp_seconds
+        else:
+            self.command(self.motion_target_ms)
+            self.state = "ADVANCING"
+            self.deadline = now + c.move_seconds
         self.push_since = self.neutral_since = None
         if not c.continuous:
             self.reset_circle()
         self.report("ADVANCING: gesture accepted; additional full circles can queue."
                     if c.continuous else
                     "ADVANCING: gesture accepted; further input ignored.")
+        if c.mode == "alternate":
+            self.report(f"RING: {self.motion_start_ms:.3f} -> "
+                        f"{self.motion_target_ms:.3f} ms; hold endpoint, no automatic return.")
 
     def tick(self, now, x, y, button=1):
         if self.state == "STOPPED":
@@ -137,7 +162,7 @@ class Dispenser:
         c = self.config
         distance = max(abs(x - c.center_x), abs(y - c.center_y))
 
-        if c.continuous and self.state in ("ADVANCING", "DROPPING", "RETURNING"):
+        if c.continuous and self.state in ("RAMPING", "ADVANCING", "DROPPING", "RETURNING"):
             if self.circle_complete(now, x, y):
                 if self.pending_cycles < c.max_pending:
                     self.pending_cycles += 1
@@ -145,12 +170,19 @@ class Dispenser:
                 else:
                     self.report("QUEUE FULL: this circle was not accepted; slow down.")
 
-        if self.state == "ADVANCING" and now >= self.deadline:
+        if self.state == "RAMPING":
+            progress = min(1.0, max(0.0, (now - self.motion_started) / c.ramp_seconds))
+            self.command(self.motion_start_ms +
+                         (self.motion_target_ms - self.motion_start_ms) * progress)
+            if progress >= 1.0:
+                self.state = "ADVANCING"
+                self.deadline = now + c.move_seconds
+        elif self.state == "ADVANCING" and now >= self.deadline:
             self.state = "DROPPING"
             self.deadline = now + c.drop_seconds
         elif self.state == "DROPPING" and now >= self.deadline:
             if c.mode == "ratchet":
-                self.write_pulse(c.home_ms)
+                self.command(c.home_ms)
                 self.state = "RETURNING"
                 self.deadline = now + c.move_seconds
             else:
@@ -218,13 +250,18 @@ def simulate(config):
                 y = config.center_y - round(400 * math.cos(angle)) * config.y_sign
                 controller.tick(now, x, y)
                 now += 0.02
-            for _ in range(100):
+            wait = max(2.0, config.ramp_seconds + config.move_seconds *
+                       (2 if config.mode == "ratchet" else 1) + config.drop_seconds + 0.2)
+            for _ in range(round(wait / 0.02)):
                 controller.tick(now, config.center_x, config.center_y)
                 now += 0.02
     else:
         simulate_push(controller, config, now)
+    pulse_summary = pulses if len(pulses) <= 20 else {
+        "count": len(pulses), "min_ms": min(pulses),
+        "max_ms": max(pulses), "last_ms": pulses[-1]}
     print(f"SIMULATION ONLY: completed={controller.completed_cycles}, "
-          f"state={controller.state}, pulse commands={pulses}")
+          f"state={controller.state}, pulse commands={pulse_summary}")
 
 
 def simulate_push(controller, config, now):
@@ -253,18 +290,40 @@ def run_hardware(config):
     controller = Dispenser(config, write_pulse)
     try:
         if config.continuous:
-            print("CONTINUOUS EMPTY TEST: each full circle advances then returns. "
+            print("CONTINUOUS TEST: one movement cycle per full circle. "
                   "No inventory stop; button clears queued requests and stops.")
+        if config.mode == "alternate":
+            print("TWO-SLOT RING TEST: alternating endpoints; no automatic return. "
+                  "Pulse range is a candidate for 180 degrees, not a measured angle.")
         print(f"Channel {config.channel}: {config.home_ms:.3f} -> "
               f"{config.home_ms + config.step_ms:.3f} ms; "
               f"mode={config.mode}, gesture={config.gesture}.")
         input("Empty/unload the mechanism before homing; Enter to initialize: ")
         # restart() sets 50 Hz and resets the HAT; don't share it with another app.
         hat.restart()
-        write_pulse(config.home_ms)
+        if config.ramp_seconds:
+            # Start from center, then approach the configured start slowly.
+            # This is commanded positioning, not position feedback or jam detection.
+            print(f"HOMING: center first, then slowly approach {config.home_ms:.3f} ms. "
+                  "Press joystick button to stop.")
+            write_pulse(1.5)
+            time.sleep(config.move_seconds)
+            started = time.monotonic()
+            while True:
+                if joystick.button == 0:
+                    raise KeyboardInterrupt
+                progress = min(1.0, (time.monotonic() - started) / config.ramp_seconds)
+                write_pulse(1.5 + (config.home_ms - 1.5) * progress)
+                if progress >= 1:
+                    break
+                time.sleep(0.02)
+        else:
+            write_pulse(config.home_ms)
         time.sleep(config.move_seconds)
-        input("Keep mechanism EMPTY for continuous test; Enter to run: "
-              if config.continuous else
+        input("Keep ring EMPTY; check clearance; Enter to run ring test: "
+              if config.mode == "alternate" else
+              "Keep mechanism EMPTY for continuous test; Enter to run: "
+              if config.continuous or config.mode == "alternate" else
               "Align wheel at a non-drop position, load cubes; Enter to run: ")
         print("Trace a full clockwise circle for one cycle."
               if config.gesture == "circle" else "Push once, then return to center.")
@@ -297,24 +356,38 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--hardware", action="store_true",
                         help="use Pi hardware; default is a simulation")
-    parser.add_argument("--mode", choices=("direct", "ratchet"), default="direct")
+    parser.add_argument("--mode", choices=("direct", "ratchet", "alternate"), default="direct")
+    parser.add_argument("--ring-180", action="store_true",
+                        help="two-slot ring test: slow alternating half-turn candidates, no auto-return")
     parser.add_argument("--continuous", action="store_true",
                         help="unlimited empty advance/return test; queues up to four circles")
     parser.add_argument("--gesture", choices=("circle", "push"), default="circle")
     parser.add_argument("--x-sign", type=int, choices=(-1, 1), default=1)
     parser.add_argument("--y-sign", type=int, choices=(-1, 1), default=1)
     parser.add_argument("--channel", type=int, default=1)
-    parser.add_argument("--home-ms", type=float, default=0.875)
-    parser.add_argument("--step-ms", type=float, default=1.25)
-    parser.add_argument("--limit-ms", type=float, default=2.125)
+    parser.add_argument("--home-ms", type=float)
+    parser.add_argument("--step-ms", type=float)
+    parser.add_argument("--limit-ms", type=float)
+    parser.add_argument("--ramp-seconds", type=float)
     parser.add_argument("--capacity", type=int, default=4)
     parser.add_argument("--center-x", type=int, default=508)
     parser.add_argument("--center-y", type=int, default=510)
     args = vars(parser.parse_args())
     hardware = args.pop("hardware")
+    ring = args.pop("ring_180")
     if args["continuous"]:
         args["mode"] = "ratchet"
         args["capacity"] = 0
+    if ring:
+        args["mode"] = "alternate"
+        args["capacity"] = 0
+    defaults = {"home_ms": 0.5 if ring else 0.875,
+                "step_ms": 1.9 if ring else 1.25,
+                "limit_ms": 2.4 if ring else 2.125,
+                "ramp_seconds": 3.0 if ring else 0.0}
+    for name, value in defaults.items():
+        if args[name] is None:
+            args[name] = value
     try:
         config = Config(**args)
         run_hardware(config) if hardware else simulate(config)
