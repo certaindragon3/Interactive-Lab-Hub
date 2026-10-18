@@ -674,6 +674,10 @@ This is a playful way to visualize how the expander works, but the same techniqu
 >
 > These cardboard and CAD images document earlier explorations. The mounted printed mechanism is shown in Part E. Its working feed and outlet geometry still differ from the intended automatic path, as discussed in the reflection.
 >
+> ![Assembled and exploded STL views of the final enclosure design used for 3D printing](images/final-print-design-assembly.jpeg)
+>
+> **Final design used for printing.** The rendering shows the enclosure assembly and an exploded view of its internal structure. Its six-pocket, 60° wheel annotation describes the CAD model; our tested assembly uses the two-slot rotator and alternating 180° movement documented in Part E.
+>
 > #### Works Like
 >
 > X/Y joystick readings describe movement around the center. The program recognizes a complete clockwise circle, slowly turns the rotator to the opposite endpoint, and holds there. Once that movement and its waiting periods finish, another full circle requests the reverse half-turn. A cube can then travel toward the cup through the rotator and bottom opening, with manual feeding and occasional outlet obstruction as current limitations.
