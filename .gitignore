@@ -44,3 +44,5 @@ __pycache__/
 
 # Private food check-in records and runtime status
 /Lab 3/.food-coach/
+
+runs
