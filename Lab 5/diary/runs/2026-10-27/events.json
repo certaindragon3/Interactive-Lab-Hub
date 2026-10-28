@@ -1,0 +1,250 @@
+[
+  {
+    "id": "e1",
+    "start": "2026-10-27T08:10:00",
+    "end": "2026-10-27T08:10:00",
+    "frames": [
+      "20261027-081000.jpg"
+    ],
+    "sources": [
+      "20261027-081000.jpg"
+    ],
+    "observations": [
+      {
+        "people": 1,
+        "who": [
+          "an older woman"
+        ],
+        "setting": "indoor dining room",
+        "objects": [
+          "mug",
+          "plate",
+          "scrambled eggs",
+          "tomatoes",
+          "toast",
+          "wooden table",
+          "chair",
+          "window",
+          "cabinet"
+        ],
+        "activity": "sitting at a table with breakfast",
+        "description": "An older woman sits at a wooden table with a plate of scrambled eggs, tomatoes, toast, and a mug. She rests her chin on her hand while looking forward.",
+        "usable": true
+      }
+    ],
+    "notes": []
+  },
+  {
+    "id": "e2",
+    "start": "2026-10-27T09:30:00",
+    "end": "2026-10-27T09:30:00",
+    "frames": [
+      "20261027-093000.jpg"
+    ],
+    "sources": [
+      "20261027-093000.jpg"
+    ],
+    "observations": [
+      {
+        "people": 0,
+        "who": [],
+        "setting": "A well-lit indoor dining room or living space with a wooden table, wooden chairs, and a large wooden cabinet.",
+        "objects": [
+          "pill organizer",
+          "mug",
+          "flowers",
+          "wooden table",
+          "wooden chair",
+          "wooden cabinet",
+          "window"
+        ],
+        "activity": "",
+        "description": "A colorful pill organizer and a mug of flowers sit on a wooden table in a sunlit room.",
+        "usable": true
+      }
+    ],
+    "notes": []
+  },
+  {
+    "id": "e3",
+    "start": "2026-10-27T11:00:00",
+    "end": "2026-10-27T11:00:00",
+    "frames": [
+      "20261027-110000.jpg"
+    ],
+    "sources": [
+      "20261027-110000.jpg"
+    ],
+    "observations": [
+      {
+        "people": 2,
+        "who": [
+          "an older woman with short grey hair",
+          "a younger woman with dark hair in a bun"
+        ],
+        "setting": "kitchen",
+        "objects": [
+          "carrots",
+          "cutting board",
+          "knife",
+          "bowl",
+          "kale",
+          "red pepper"
+        ],
+        "activity": "preparing food",
+        "description": "An older woman with short grey hair cuts carrots on a wooden board at a kitchen table. A younger woman stands next to her, placing green leafy vegetables into a bowl.",
+        "usable": true
+      }
+    ],
+    "notes": [
+      "The caregiver and the older woman prepared vegetables together."
+    ]
+  },
+  {
+    "id": "e4",
+    "start": "2026-10-27T14:20:00",
+    "end": "2026-10-27T14:45:00",
+    "frames": [
+      "20261027-142000.jpg",
+      "20261027-144500.jpg"
+    ],
+    "sources": [
+      "20261027-142000.jpg",
+      "20261027-144500.jpg"
+    ],
+    "observations": [
+      {
+        "people": 1,
+        "who": [
+          "an older woman"
+        ],
+        "setting": "an indoor living room by a window",
+        "objects": [
+          "glasses",
+          "book",
+          "cardigan",
+          "jeans",
+          "mug",
+          "table",
+          "chair",
+          "throw blanket",
+          "plants"
+        ],
+        "activity": "reading a book",
+        "description": "An older woman with short grey hair and glasses is reading a book while seated in an armchair. A side table with a mug and a small vase of flowers is beside her.",
+        "usable": true
+      },
+      {
+        "people": 1,
+        "who": [
+          "an older woman"
+        ],
+        "setting": "living room",
+        "objects": [
+          "book",
+          "armchair",
+          "mug",
+          "table",
+          "lamp",
+          "plant"
+        ],
+        "activity": "reading a book",
+        "description": "An older woman sits in an armchair while holding an open book. A mug rests on a small wooden table next to her.",
+        "usable": true
+      }
+    ],
+    "notes": []
+  },
+  {
+    "id": "e5",
+    "start": "2026-10-27T16:10:00",
+    "end": "2026-10-27T16:30:00",
+    "frames": [
+      "20261027-161000.jpg",
+      "20261027-163000.jpg"
+    ],
+    "sources": [
+      "20261027-161000.jpg",
+      "20261027-163000.jpg"
+    ],
+    "observations": [
+      {
+        "people": 2,
+        "who": [
+          "a middle-aged woman with brown hair",
+          "an older woman with short grey hair and glasses"
+        ],
+        "setting": "an indoor hallway near an open doorway",
+        "objects": [
+          "glasses",
+          "shirt",
+          "cardigan",
+          "door",
+          "door handle",
+          "bag"
+        ],
+        "activity": "standing face-to-face near a doorway",
+        "description": "An older woman with short grey hair and glasses stands near an open wooden door, facing a middle-aged woman with brown hair who is wearing a yellow sweater.",
+        "usable": true
+      },
+      {
+        "people": 2,
+        "who": [
+          "an older woman with short grey hair and glasses",
+          "a younger woman with shoulder-length brown hair"
+        ],
+        "setting": "indoor living room",
+        "objects": [
+          "photo album",
+          "couch",
+          "lamp",
+          "framed pictures",
+          "plants",
+          "table"
+        ],
+        "activity": "looking at a photo album",
+        "description": "An older woman with short grey hair and glasses and a younger woman with shoulder-length brown hair are sitting on a couch together, looking at an open photo album.",
+        "usable": true
+      }
+    ],
+    "notes": [
+      "The visitor was her daughter Anna.",
+      "Anna and the older woman looked through a photo album together."
+    ]
+  },
+  {
+    "id": "e6",
+    "start": "2026-10-27T18:30:00",
+    "end": "2026-10-27T18:30:00",
+    "frames": [
+      "20261027-183000.jpg"
+    ],
+    "sources": [
+      "20261027-183000.jpg"
+    ],
+    "observations": [
+      {
+        "people": 1,
+        "who": [
+          "an older woman with grey hair and glasses"
+        ],
+        "setting": "indoors in a dining room",
+        "objects": [
+          "mug",
+          "plate of food",
+          "salmon",
+          "broccoli",
+          "carrots",
+          "grains",
+          "table",
+          "chair",
+          "window"
+        ],
+        "activity": "sitting at a dining table with a plate of food and a mug",
+        "description": "An older woman with grey hair and glasses sits at a wooden dining table. A plate of food with salmon, broccoli, carrots, and grains, alongside a ceramic mug, rests on the table in front of her.",
+        "usable": true
+      }
+    ],
+    "notes": []
+  }
+]
