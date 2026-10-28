@@ -429,7 +429,22 @@ Use storyboards and/or [Verplank diagrams](https://ccrma.stanford.edu/courses/25
 > | 2. Overnight processing | The user rests while the device processes the selected material. No further interaction is required. | The Pi selects useful frames, groups related records, and creates a draft narrative linked to source images. |
 > | 3. Morning reveal | The caregiver checks the draft. The user presses Play and can pause, replay, or skip a chapter. | The device plays the approved narration and displays the matching photograph. |
 >
-> [Insert three-frame storyboard here.]
+> ![Three-frame concept storyboard for Yesterday Together: bedtime handoff, overnight processing, and morning review followed by user-started playback.](storyboard-audio-diary-render.png)
+>
+> [HTML source / local preview](storyboard-audio-diary.html)
+>
+> **Initial ideation — Verplank**
+>
+> | Elements | Concept |
+> |---|---|
+> | Idea / Error | Turn selected daily records into a spoken recap with photographs. A collection of files still needs someone to select, organize, and explain it. |
+> | Metaphor / Scenario | A shared photo album read aloud: an older adult living with Alzheimer’s disease and a caregiver hand over selected moments at bedtime and revisit them the next morning. |
+> | Model / Task | Selected records → overnight draft → caregiver review → user-started playback. Choose, remove, and annotate records; prepare the diary; review; then listen at the user’s pace. |
+> | Display / Control | The screen confirms “Your diary will be prepared overnight,” shows “Processing,” then accompanies narration with the matching photograph. “Prepare My Diary,” Play/Pause, Replay Chapter, and Next Chapter provide the intended controls. |
+>
+> This first concept storyboard shows intended behavior, not a tested system. Review before playback and links from draft chapters to source records remain requirements to implement and verify. Night-time processing uses selected daytime material, with no camera in use. The people and generic Pi device are illustrative; the hardware and the mapping of playback controls to the single large button or screen remain undecided.
+>
+> The illustrations were generated with Imagegen; captions, layout, and this concept summary were prepared with AI assistance. [Prompts and asset notes](assets/storyboard-audio-diary/prompts.md).
 
 ## Prep for Part 2
 
