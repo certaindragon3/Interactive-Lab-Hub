@@ -574,7 +574,7 @@ Fake a night first: run it for thirty seconds while you walk around, stop it, an
 > 4. **group**: frames less than 30 minutes apart become one event; caregiver notes within ±15 minutes are attached. If a description mentions a knife, fire, an injury and the like, the event goes on a **Check first** list for the caregiver and is kept out of the narration.
 > 5. **draft**: one short chapter per event, each citing its source frames. Code, not the model, checks that every event with people got a chapter, and flags words like *enjoyed*, *remembered* or *took her pills*.
 >
-> `status.json` shows **Processing**, **Ready for Review** or **Needs Attention**, and a day with nothing usable never reaches the model. [`diary/evaluate.py`](diary/evaluate.py) scores a run against an answer key the pipeline never sees.
+> `status.json` shows **Processing**, **Ready for Review** or **Needs Attention**, and a day with nothing usable never reaches the model. A finished run also writes the caregiver's morning page, `review.html` (see Part I). [`diary/evaluate.py`](diary/evaluate.py) scores a run against an answer key the pipeline never sees.
 >
 > #### Three test days
 >
@@ -661,6 +661,14 @@ The reveal. The night produced a log; the morning turns it into something a half
 
 Make it yours: show the report on the Mini PiTFT, read it aloud with Piper from Lab 3, plot the night as a timeline, or ask for JSON (`--json`, Part D) and move a servo. Whatever you pick, make sure it is honest about a night in which nothing happened.
 
+> #### What the caregiver sees in the morning
+>
+> Every run ends by writing a morning page, [`review.html`](diary/runs/2026-11-01/review.html), made by [`morning_page.py`](diary/morning_page.py). It shows the whole day on a timeline, puts the **Check first** warning at the top, lays out each draft chapter beside the frames it came from, and ends with a wall of everything that was left out and why. Here is the real day, exactly as the pipeline produced it on Orange:
+>
+> ![Morning review page for 1 November 2026: five summary cards, a timeline of eight moments, a Check first warning about a knife, seven draft chapters with their source frames, and eleven left-out frames](assets/morning-review-2026-11-01.png)
+>
+> The page is static. Approve, Edit and Remove are drawn but not wired up yet. GitHub does not render HTML, so the image above is a browser screenshot of the page; open `review.html` locally to see it live. The synthetic day has [one too](diary/runs/2026-10-27/review.html).
+
 > #### Review Before Playback
 >
 > The caregiver will see each proposed chapter beside its source photograph and can approve, edit, or delete it. Only approved chapters will become part of the published diary.
@@ -724,7 +732,8 @@ Make it yours: show the report on the Mini PiTFT, read it aloud with Piper from 
 >
 > #### Limitations and next steps
 >
-> * **The morning half is not built yet.** There is a draft for review, but no review screen, no Piper narration and no Play / Replay / Next buttons. Part I above is still a design.
+> * **The morning half is only half built.** The review page exists, but its buttons do nothing, and there is no Piper narration and no Play / Replay / Next yet.
+> * **The wording changes from run to run.** Same photos, same descriptions, new draft: one rerun renamed the chapters "Morning", "Early Afternoon" and, for 16:10, "Evening". The facts held; the poetry did not. This is one more reason the caregiver approves each chapter, and why this report quotes one saved run.
 > * **No real overnight run yet.** Every run so far was started by hand in the afternoon; the night shift (start at the bedtime hand-off, read `status.json` in the morning) still has to be tested.
 > * **Time comes from file names.** Our clock times were assumed; a real version should read the capture time stored in the photo or video.
 > * **Small objects slip through.** One frame every 5 s and a 20-pixel blade do not mix. A caregiver-facing safety check would need more frames, or a detector that is actually looking for that.
@@ -755,7 +764,7 @@ As always, make sure you document contributions and ideas from others (and AI) e
 >
 > Our team came up with Yesterday Together and wrote the Part 2 concept, the storyboard table and the design sections of F–I. The friends in `real_day` did the acting (and brought the pumpkin). Part 1 (A–E) was done by Terence Zhang on his Pi.
 >
-> * **Claude Code (Claude Opus 5.5)** wrote the pipeline code ([`overnight_diary.py`](diary/overnight_diary.py), [`evaluate.py`](diary/evaluate.py), [`make_clips.py`](diary/make_clips.py)), had subagents review our footage frame by frame, converted the footage, ran the tests on Orange, and drafted the "what we built", results and limitations write-up in Parts H and I.
+> * **Claude Code (Claude Opus 5.5)** wrote the pipeline code ([`overnight_diary.py`](diary/overnight_diary.py), [`morning_page.py`](diary/morning_page.py), [`evaluate.py`](diary/evaluate.py), [`make_clips.py`](diary/make_clips.py)), cut the captioned clips, had subagents review our footage frame by frame, converted the footage, ran the tests on Orange, and drafted the "what we built", results and limitations write-up in Parts H and I.
 > * **Codex (OpenAI)** and its built-in image generation drew the storyboard illustrations, the AI-generated photos in `sample_day`, and the start frames in `sample_day2`. `x-ai/grok-imagine-video-1.5-lite` turned some of those frames into clips.
 > * **`google/gemini-3.5-flash-lite`** (via OpenRouter) is part of the system: it describes each frame and drafts the diary chapters. That is exactly why the pipeline has evidence rules, a Check first list, and a caregiver in the loop.
 

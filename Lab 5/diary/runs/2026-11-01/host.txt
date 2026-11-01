@@ -1,2 +1,2 @@
 Orange
-temp=58.2'C
+temp=64.2'C

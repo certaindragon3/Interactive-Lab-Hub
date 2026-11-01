@@ -12,10 +12,10 @@ import json
 import pathlib
 import sys
 
-run, truth = pathlib.Path(sys.argv[1]), json.loads(pathlib.Path(sys.argv[2]).read_text())
-frames = json.loads((run / "frames.json").read_text())
-events = json.loads((run / "events.json").read_text())
-draft = json.loads((run / "draft.json").read_text())
+run, truth = pathlib.Path(sys.argv[1]), json.loads(pathlib.Path(sys.argv[2]).read_text(encoding="utf-8"))
+frames = json.loads((run / "frames.json").read_text(encoding="utf-8"))
+events = json.loads((run / "events.json").read_text(encoding="utf-8"))
+draft = json.loads((run / "draft.json").read_text(encoding="utf-8"))
 chapters = draft["chapters"]
 
 expect = {i["file"]: i for i in truth["images"]}

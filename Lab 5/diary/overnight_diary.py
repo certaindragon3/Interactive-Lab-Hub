@@ -12,7 +12,8 @@ Stages, each saved to the run folder so an interrupted night resumes where it st
   3. describe ask a vision model what is visible, and nothing more (cached per frame)
   4. group    frames close in time become one candidate event; attach caregiver notes
   5. draft    write one short chapter per event, each citing its source frames
-status.json says Processing, Ready for Review or Needs Attention. Nothing here plays
+status.json says Processing, Ready for Review or Needs Attention, and review.html is the
+caregiver's morning page (morning_page.py). Nothing here plays
 audio: the draft waits for the caregiver.
 """
 import argparse
@@ -28,6 +29,8 @@ import cv2
 import numpy as np
 import requests
 from dotenv import load_dotenv
+
+import morning_page                                # Part I: writes review.html for the caregiver
 
 PHOTO = {".jpg", ".jpeg", ".png"}
 VIDEO = {".mp4", ".mov", ".m4v"}
@@ -60,7 +63,7 @@ load_dotenv(pathlib.Path(__file__).resolve().parent.parent / ".env")     # Lab 5
 MODEL = args.model or os.environ.get("OPENROUTER_MODEL", "google/gemini-3.5-flash-lite")
 KEY = os.environ.get("OPENROUTER_API_KEY", "")
 notes_path = args.notes or args.records / "caregiver_notes.json"
-notes = json.loads(notes_path.read_text()) if notes_path.exists() else {"notes": []}
+notes = json.loads(notes_path.read_text(encoding="utf-8")) if notes_path.exists() else {"notes": []}
 
 
 def stamp_of(path):
@@ -77,12 +80,12 @@ out = args.out or pathlib.Path(__file__).resolve().parent / "runs" / day
 
 
 def save(name, data):
-    (out / name).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+    (out / name).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def load(name):
     p = out / name
-    return json.loads(p.read_text()) if p.exists() else None
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
 def status(state, detail):
@@ -299,7 +302,7 @@ def write_markdown(chapters, frames, events):
                for f in frames if f["frame"] not in used]
     if dropped:
         lines += ["## Left out", ""] + [f"- `{n}`: {why}" for n, why in dropped] + [""]
-    (out / "draft.md").write_text("\n".join(lines))
+    (out / "draft.md").write_text("\n".join(lines), encoding="utf-8")
 
 
 def main():
@@ -337,6 +340,10 @@ def main():
                                                           if a["event"] not in {c["event"] for c in chapters})
     status("Ready for Review", f"{len(chapters)} chapters from {len(events)} events, {flagged} flagged, "
                                f"{time.time() - started:.0f} s, about ${cost:.4f} this run")
+    try:                                         # the morning page is a view; never fail the night over it
+        print("morning page:", morning_page.build(out, args.records), flush=True)
+    except Exception as e:
+        print("morning page failed:", e, flush=True)
 
 
 try:

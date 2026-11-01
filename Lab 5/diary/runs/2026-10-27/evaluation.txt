@@ -20,10 +20,10 @@
 
 3. draft: 5 chapters, 1 flagged, 1 events to check first
   CHECK FIRST [11:00-11:00] ['knife']
-  [08:10-08:10] Breakfast: You sat at a wooden table with a plate of scrambled eggs, tomatoes, and toast, alongside a ceramic mug.
-  [11:00-11:00] Preparing vegetables: You and the caregiver prepared vegetables together. You cut carrots on a wooden board while a younger woman tore kale into a bowl.  FLAGS ['seen in photos: knife']
-  [14:20-14:45] Reading: You sat in an armchair and read an open book. A mug rested on a small wooden table next to a window with potted plants.
-  [16:10-16:30] Looking at photos: Your daughter Anna visited you. You and Anna looked through a photo album together on the sofa.
-  [18:30-18:30] Dinner: You sat at a wooden table with a plate of food including salmon, broccoli, carrots, and rice, along with a mug.
+  [08:10-08:10] Breakfast: You sat at a wooden table in the dining room. You had a plate of scrambled eggs, tomatoes, and toast, alongside a ceramic mug.
+  [11:00-11:00] Kitchen Preparation: You prepared vegetables together in the kitchen. You cut carrots on a wooden board.  FLAGS ['seen in photos: knife']
+  [14:20-14:45] Reading Time: You sat in an armchair by the window and read an open book. A mug rested on a small wooden table next to you.
+  [16:10-16:30] Visit with Anna: Your daughter Anna visited you. You sat on the sofa together and looked through a photo album.
+  [18:30-18:30] Dinner: You sat at a wooden table in the dining room with a plate of food and a mug.
 
 The claims in each chapter still need a human read against the photos; this script only checks structure.

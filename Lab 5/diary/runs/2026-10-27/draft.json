@@ -18,7 +18,7 @@
       "event": "e1",
       "time": "08:10-08:10",
       "title": "Breakfast",
-      "text": "You sat at a wooden table with a plate of scrambled eggs, tomatoes, and toast, alongside a ceramic mug.",
+      "text": "You sat at a wooden table in the dining room. You had a plate of scrambled eggs, tomatoes, and toast, alongside a ceramic mug.",
       "sources": [
         "20261027-081000.jpg"
       ],
@@ -29,8 +29,8 @@
     {
       "event": "e3",
       "time": "11:00-11:00",
-      "title": "Preparing vegetables",
-      "text": "You and the caregiver prepared vegetables together. You cut carrots on a wooden board while a younger woman tore kale into a bowl.",
+      "title": "Kitchen Preparation",
+      "text": "You prepared vegetables together in the kitchen. You cut carrots on a wooden board.",
       "sources": [
         "20261027-110000.jpg"
       ],
@@ -45,8 +45,8 @@
     {
       "event": "e4",
       "time": "14:20-14:45",
-      "title": "Reading",
-      "text": "You sat in an armchair and read an open book. A mug rested on a small wooden table next to a window with potted plants.",
+      "title": "Reading Time",
+      "text": "You sat in an armchair by the window and read an open book. A mug rested on a small wooden table next to you.",
       "sources": [
         "20261027-142000.jpg",
         "20261027-144500.jpg"
@@ -58,8 +58,8 @@
     {
       "event": "e5",
       "time": "16:10-16:30",
-      "title": "Looking at photos",
-      "text": "Your daughter Anna visited you. You and Anna looked through a photo album together on the sofa.",
+      "title": "Visit with Anna",
+      "text": "Your daughter Anna visited you. You sat on the sofa together and looked through a photo album.",
       "sources": [
         "20261027-161000.jpg",
         "20261027-163000.jpg"
@@ -75,7 +75,7 @@
       "event": "e6",
       "time": "18:30-18:30",
       "title": "Dinner",
-      "text": "You sat at a wooden table with a plate of food including salmon, broccoli, carrots, and rice, along with a mug.",
+      "text": "You sat at a wooden table in the dining room with a plate of food and a mug.",
       "sources": [
         "20261027-183000.jpg"
       ],
