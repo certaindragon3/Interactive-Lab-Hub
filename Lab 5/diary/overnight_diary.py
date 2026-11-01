@@ -38,6 +38,10 @@ STAMP = re.compile(r"(\d{8})[-_](\d{6})")          # 20261027-163000
 RISKY = re.compile(r"\b(took|taken|taking) (her|his|your|the)? ?(medication|medicine|pills?)\b"
                    r"|\b(enjoy\w*|happy|happily|sad|lonely|love[sd]?|felt|feel\w*|remember\w*|said|told|talked)\b",
                    re.I)
+# Things a caregiver should see before anything is narrated: the event is flagged,
+# and the draft is told to leave them out of the listener's story.
+SENSITIVE = re.compile(r"\b(knife|knives|blade|scissors|weapon|gun|fire|flame|smoke|blood|injur\w*|wound|"
+                       r"fall(en|ing)?|lying on the floor|ambulance)\b", re.I)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("records", type=pathlib.Path, help="folder of the day's selected photos and clips")
@@ -182,10 +186,14 @@ def describe(frames, cache):
     for f in frames:
         if f["drop"] or f["frame"] in cache:
             continue
-        b64 = base64.b64encode(image_path(f).read_bytes()).decode()
-        mime = "image/png" if f["frame"].lower().endswith(".png") else "image/jpeg"
+        # Re-encode before upload: drops EXIF (phones store GPS there) and caps the size.
+        img = cv2.imread(str(image_path(f)))
+        scale = min(1.0, 1280 / max(img.shape[:2]))
+        if scale < 1:
+            img = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+        b64 = base64.b64encode(cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85])[1].tobytes()).decode()
         d, cost = openrouter([{"type": "text", "text": DESCRIBE},
-                              {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}])
+                              {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}])
         cache[f["frame"]] = d
         spent += cost or 0
         save("descriptions.json", cache)            # after every frame: a crash loses one call at most
@@ -211,6 +219,8 @@ def group(frames, cache):
         hi = datetime.datetime.fromisoformat(e["end"]) + datetime.timedelta(minutes=15)
         e["notes"] = [n["fact"] for n in notes.get("notes", [])
                       if lo.time() <= datetime.time.fromisoformat(n["time"]) <= hi.time()]
+        seen = json.dumps(e["observations"])
+        e["sensitive"] = sorted({m.group(0).lower() for m in SENSITIVE.finditer(seen)})
     return events
 
 
@@ -225,6 +235,9 @@ Rules:
 - If an event only shows objects (for example a pill organizer), describe the object or omit the chapter;
   never say medication was taken.
 - Never ask the listener whether they remember.
+- If an event lists "sensitive" items (for example a knife), do not mention them; the caregiver decides.
+- People in the photos may look younger than the listener; write "you" and never mention age.
+- When an event shows only one person, that person is the listener: "you", never "a person" or "someone".
 
 Answer JSON: {"chapters": [{"event": "<event id>", "title": str, "text": str}]}
 
@@ -236,8 +249,20 @@ def draft(events):
     brief = [{"id": e["id"], "time": f"{e['start'][11:16]}-{e['end'][11:16]}",
               "observations": [{k: o.get(k) for k in ("who", "setting", "objects", "activity", "description")}
                                for o in e["observations"]],
-              "caregiver_facts": e["notes"]} for e in events]
+              "caregiver_facts": e["notes"], "sensitive": e["sensitive"]} for e in events]
     d, cost = openrouter([{"type": "text", "text": DRAFT + json.dumps(brief, indent=1)}])
+    written = {c.get("event") for c in d.get("chapters", [])}
+    # Only object-only events may be left out; the model sometimes drops others silently.
+    missing = [b for b, e in zip(brief, events)
+               if e["id"] not in written and any(o.get("people") for o in e["observations"])]
+    if missing:
+        print(f"  draft skipped {[b['id'] for b in missing]}, asking again for those", flush=True)
+        more, c2 = openrouter([{"type": "text", "text": DRAFT + json.dumps(missing, indent=1)
+                                + "\n\nWrite exactly one chapter for every event above."}])
+        d["chapters"] = d.get("chapters", []) + more.get("chapters", [])
+        cost += c2 or 0
+    order = {e["id"]: i for i, e in enumerate(events)}
+    d["chapters"] = sorted(d.get("chapters", []), key=lambda c: order.get(c.get("event"), len(order)))
     by_id = {e["id"]: e for e in events}
     chapters = []
     for c in d.get("chapters", []):
@@ -245,6 +270,7 @@ def draft(events):
         if not e:                                    # a chapter with no event behind it is dropped
             continue
         flags = sorted({m.group(0).lower() for m in RISKY.finditer(c.get("text", ""))})
+        flags += [f"seen in photos: {s}" for s in e["sensitive"]]
         chapters.append({"event": e["id"], "time": f"{e['start'][11:16]}-{e['end'][11:16]}",
                          "title": c.get("title", ""), "text": c.get("text", ""),
                          "sources": e["sources"], "caregiver_facts": e["notes"],
@@ -252,9 +278,14 @@ def draft(events):
     return chapters, cost
 
 
-def write_markdown(chapters, frames):
+def write_markdown(chapters, frames, events):
     lines = [f"# Draft diary for {day}", "",
              f"Model: `{MODEL}`. Every chapter needs approval before it can be played.", ""]
+    alerts = [e for e in events if e["sensitive"]]
+    if alerts:                                       # listed even when the draft left the event out
+        lines += ["## Check first", ""] + [
+            f"- {e['start'][11:16]}-{e['end'][11:16]}: {', '.join(e['sensitive'])} seen in "
+            + ", ".join(f"`{s}`" for s in e["sources"]) for e in alerts] + [""]
     for c in chapters:
         lines += [f"## {c['time']} {c['title']}", "", c["text"], "",
                   "Sources: " + ", ".join(f"`{s}`" for s in c["sources"])]
@@ -263,9 +294,11 @@ def write_markdown(chapters, frames):
         if c["flags"]:
             lines.append("**Check first:** " + ", ".join(c["flags"]))
         lines.append("")
-    dropped = [f for f in frames if f["drop"]]
+    used = {n for e in events for n in e["frames"]}
+    dropped = [(f["frame"], f["drop"] or "the vision model could not describe it reliably")
+               for f in frames if f["frame"] not in used]
     if dropped:
-        lines += ["## Left out", ""] + [f"- `{f['frame']}`: {f['drop']}" for f in dropped] + [""]
+        lines += ["## Left out", ""] + [f"- `{n}`: {why}" for n, why in dropped] + [""]
     (out / "draft.md").write_text("\n".join(lines))
 
 
@@ -296,9 +329,12 @@ def main():
     status("Processing", f"{len(events)} candidate events, writing the draft")
     chapters, c2 = draft(events)
     cost += c2 or 0
-    save("draft.json", {"date": day, "model": MODEL, "chapters": chapters})
-    write_markdown(chapters, frames)
-    flagged = sum(1 for c in chapters if c["flags"])
+    alerts = [{"event": e["id"], "time": f"{e['start'][11:16]}-{e['end'][11:16]}", "seen": e["sensitive"],
+               "sources": e["sources"]} for e in events if e["sensitive"]]
+    save("draft.json", {"date": day, "model": MODEL, "check_first": alerts, "chapters": chapters})
+    write_markdown(chapters, frames, events)
+    flagged = sum(1 for c in chapters if c["flags"]) + sum(1 for a in alerts
+                                                          if a["event"] not in {c["event"] for c in chapters})
     status("Ready for Review", f"{len(chapters)} chapters from {len(events)} events, {flagged} flagged, "
                                f"{time.time() - started:.0f} s, about ${cost:.4f} this run")
 

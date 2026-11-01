@@ -1,12 +1,24 @@
 {
   "date": "2026-10-27",
   "model": "google/gemini-3.5-flash-lite",
+  "check_first": [
+    {
+      "event": "e3",
+      "time": "11:00-11:00",
+      "seen": [
+        "knife"
+      ],
+      "sources": [
+        "20261027-110000.jpg"
+      ]
+    }
+  ],
   "chapters": [
     {
       "event": "e1",
       "time": "08:10-08:10",
       "title": "Breakfast",
-      "text": "At 8:10 in the morning, you sat at the wooden dining table with a plate of scrambled eggs, tomatoes, toast, and a mug. You rested your chin on your hand while looking forward.",
+      "text": "You sat at a wooden table with a plate of scrambled eggs, tomatoes, and toast, alongside a ceramic mug.",
       "sources": [
         "20261027-081000.jpg"
       ],
@@ -17,22 +29,24 @@
     {
       "event": "e3",
       "time": "11:00-11:00",
-      "title": "Preparing Vegetables",
-      "text": "At 11:00, you and a younger woman prepared vegetables together in the kitchen. You cut carrots on a wooden board while she placed green leafy vegetables into a bowl.",
+      "title": "Preparing vegetables",
+      "text": "You and the caregiver prepared vegetables together. You cut carrots on a wooden board while a younger woman tore kale into a bowl.",
       "sources": [
         "20261027-110000.jpg"
       ],
       "caregiver_facts": [
         "The caregiver and the older woman prepared vegetables together."
       ],
-      "flags": [],
+      "flags": [
+        "seen in photos: knife"
+      ],
       "review": "pending"
     },
     {
       "event": "e4",
       "time": "14:20-14:45",
-      "title": "Reading a Book",
-      "text": "At 2:20 in the afternoon, you sat in an armchair by the window and read a book. A mug rested on the small wooden table next to you.",
+      "title": "Reading",
+      "text": "You sat in an armchair and read an open book. A mug rested on a small wooden table next to a window with potted plants.",
       "sources": [
         "20261027-142000.jpg",
         "20261027-144500.jpg"
@@ -44,8 +58,8 @@
     {
       "event": "e5",
       "time": "16:10-16:30",
-      "title": "Visit with Anna",
-      "text": "At 4:10, your daughter Anna came to visit. You and Anna looked through an open photo album together while sitting on the couch.",
+      "title": "Looking at photos",
+      "text": "Your daughter Anna visited you. You and Anna looked through a photo album together on the sofa.",
       "sources": [
         "20261027-161000.jpg",
         "20261027-163000.jpg"
@@ -61,7 +75,7 @@
       "event": "e6",
       "time": "18:30-18:30",
       "title": "Dinner",
-      "text": "At 6:30 in the evening, you sat at the wooden dining table in the dining room. A plate with salmon, broccoli, carrots, and grains, alongside a ceramic mug, was in front of you.",
+      "text": "You sat at a wooden table with a plate of food including salmon, broccoli, carrots, and rice, along with a mug.",
       "sources": [
         "20261027-183000.jpg"
       ],

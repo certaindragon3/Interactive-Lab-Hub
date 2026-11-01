@@ -2,35 +2,40 @@
 
 Model: `google/gemini-3.5-flash-lite`. Every chapter needs approval before it can be played.
 
+## Check first
+
+- 11:00-11:00: knife seen in `20261027-110000.jpg`
+
 ## 08:10-08:10 Breakfast
 
-At 8:10 in the morning, you sat at the wooden dining table with a plate of scrambled eggs, tomatoes, toast, and a mug. You rested your chin on your hand while looking forward.
+You sat at a wooden table with a plate of scrambled eggs, tomatoes, and toast, alongside a ceramic mug.
 
 Sources: `20261027-081000.jpg`
 
-## 11:00-11:00 Preparing Vegetables
+## 11:00-11:00 Preparing vegetables
 
-At 11:00, you and a younger woman prepared vegetables together in the kitchen. You cut carrots on a wooden board while she placed green leafy vegetables into a bowl.
+You and the caregiver prepared vegetables together. You cut carrots on a wooden board while a younger woman tore kale into a bowl.
 
 Sources: `20261027-110000.jpg`
 Caregiver facts: The caregiver and the older woman prepared vegetables together.
+**Check first:** seen in photos: knife
 
-## 14:20-14:45 Reading a Book
+## 14:20-14:45 Reading
 
-At 2:20 in the afternoon, you sat in an armchair by the window and read a book. A mug rested on the small wooden table next to you.
+You sat in an armchair and read an open book. A mug rested on a small wooden table next to a window with potted plants.
 
 Sources: `20261027-142000.jpg`, `20261027-144500.jpg`
 
-## 16:10-16:30 Visit with Anna
+## 16:10-16:30 Looking at photos
 
-At 4:10, your daughter Anna came to visit. You and Anna looked through an open photo album together while sitting on the couch.
+Your daughter Anna visited you. You and Anna looked through a photo album together on the sofa.
 
 Sources: `20261027-161000.jpg`, `20261027-163000.jpg`
 Caregiver facts: The visitor was her daughter Anna.; Anna and the older woman looked through a photo album together.
 
 ## 18:30-18:30 Dinner
 
-At 6:30 in the evening, you sat at the wooden dining table in the dining room. A plate with salmon, broccoli, carrots, and grains, alongside a ceramic mug, was in front of you.
+You sat at a wooden table with a plate of food including salmon, broccoli, carrots, and rice, along with a mug.
 
 Sources: `20261027-183000.jpg`
 

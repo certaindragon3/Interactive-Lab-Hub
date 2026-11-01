@@ -547,7 +547,75 @@ Fake a night first: run it for thirty seconds while you walk around, stop it, an
 > * Changes required during caregiver review.
 > * Final audio duration and playback behavior.
 >
-> [Insert actual overnight logs, screenshots, and results here.]
+> #### What we actually built (and where it drifted from the plan)
+>
+> The plan above was written before we touched a keyboard. Reality negotiated a few terms:
+>
+> | Plan | What we built | Why |
+> |---|---|---|
+> | YOLO for visual clues | A vision model describes each frame in JSON (`people`, `who`, `setting`, `objects`, `activity`, `usable`) | It already returns people and objects, and it can say *"this photo is useless"*, which YOLO cannot |
+> | Local vision model + Qwen | `google/gemini-3.5-flash-lite` through [OpenRouter](https://openrouter.ai), called from the Pi | Part D showed the 0.8B Qwen confidently relocating FDR to Roosevelt Island; a small cloud model is far more faithful for under a cent per photo |
+> | "Keep processing local" | Sorting, filtering, grouping and every rule run on the Pi; only re-encoded frames (no EXIF, so no GPS) and short text go to the model | A deliberate trade of privacy for accuracy; a real deployment would need the family's consent for this |
+>
+> Why still *overnight* if a day takes about a minute? Because the caregiver reviews in the morning anyway, and OpenRouter's `:batch` models are half price if nobody is in a hurry. Nobody should be in a hurry at 3 a.m.
+>
+> #### The pipeline
+>
+> [`diary/overnight_diary.py`](diary/overnight_diary.py) runs five stages and saves each one into `diary/runs/<date>/`, so an interrupted night picks up where it stopped:
+>
+> 1. **load**: order photos and clips by the time in the file name; sample one frame every 5 s from each video.
+> 2. **filter**: OpenCV drops frames that are too dark (mean brightness < 45) or blurry (Laplacian variance < 40), and near-duplicates (a 64-bit difference hash within 6 bits, inside a 10-minute window).
+> 3. **describe**: the vision model says only what is visible: no names, relationships, emotions, conversations, or "took their medication".
+> 4. **group**: frames less than 30 minutes apart become one event; caregiver notes within ±15 minutes are attached. If a description mentions a knife, fire, an injury and the like, the event goes on a **Check first** list for the caregiver and is kept out of the narration.
+> 5. **draft**: one short chapter per event, each citing its source frames. Code, not the model, checks that every event with people got a chapter, and flags words like *enjoyed*, *remembered* or *took her pills*.
+>
+> `status.json` shows **Processing**, **Ready for Review** or **Needs Attention**, and a day with nothing usable never reaches the model. [`diary/evaluate.py`](diary/evaluate.py) scores a run against an answer key the pipeline never sees.
+>
+> #### Three test days
+>
+> | Day | Material | What it tests |
+> |---|---|---|
+> | [`sample_day`](diary/sample_day) | 10 AI-generated photos of a fictional older woman | Ordering, deduplication, the dark-photo filter, the pill-organizer and visitor rules |
+> | [`sample_day2`](diary/sample_day2) | AI-generated start frames, turned into clips with `x-ai/grok-imagine-video-1.5-lite` ([`make_clips.py`](diary/make_clips.py)); the long walk chains each segment's last frame into the next | Video input. Only 3 of the clips were generated before the borrowed Pi fell off the network, so it was never run through the pipeline |
+> | [`real_day`](diary/real_day) | **Our friends acting out a day**: 7 photos and 7 clips (2 min 49 s) | Everything, with real people, real phones and real chaos |
+>
+> #### The real day: our friends, a campus lounge, and a pumpkin
+>
+> We wrote an 8-scene shot list. Our actors treated it as a gentle suggestion. Breakfast became pumpkin carving, the pill organizer became a bottle of vitamin D3, "home" is a campus lounge with a giant Connect Four, and the long walk features a small blade, held with great confidence. The pipeline does not care about any of this, which is the point.
+>
+> | 08:30 pumpkin carving | 10:20 folding a jacket together | 15:00 the long walk |
+> |---|---|---|
+> | ![pumpkin](diary/real_day/20261101-083000.jpg) | ![folding](diary/real_day/20261101-102000.jpg) | ![walk](diary/runs/2026-11-01/frames/20261101-150000_0005s.jpg) |
+> | **16:10 a stranger with a red bag** | **17:00 the grandson visits** | **19:30 the "lights off" test** |
+> | ![door](diary/runs/2026-11-01/frames/20261101-161000_0010s.jpg) | ![visit](diary/runs/2026-11-01/frames/20261101-170000_0000s.jpg) | ![dark](diary/real_day/20261101-193000.jpg) |
+>
+> Honest fine print:
+>
+> * Everything was filmed on 2026-11-01 between 16:08 and 16:24. The clock times in the file names (08:30 to 19:31) are **assumed from the shot list**, so the day has a believable shape.
+> * The actors forgot to film the bad material, so the dark and the blurred photos are **derived copies** of the jacket photo (−4.5 EV, and a motion blur).
+> * iPhone HEIC/HEVC originals stay on our laptop; `real_day` keeps JPEG and 720p H.264 copies (28 MB in total, instead of 250 MB with one clip over GitHub's 100 MB limit). One clip came from a phone recording in HDR and was tone-mapped to SDR, or the brightness filter would have been judging washed-out colors.
+> * The caregiver's notes ([`caregiver_notes.json`](diary/real_day/caregiver_notes.json)) say two things only: the caregiver folded the jacket with him, and the visitor is his grandson "Leo" (a made-up name). The stranger at the door gets no note, on purpose.
+>
+> #### Results on Orange
+>
+> The run happened on **Orange** (our Raspberry Pi 5) over ssh. The first full pass described 36 frames in **72 s for about $0.026**; later passes reuse the cached descriptions and cost a fraction of a cent. Logs and outputs: [`diary/runs/2026-11-01`](diary/runs/2026-11-01) ([draft](diary/runs/2026-11-01/draft.md), [evaluation](diary/runs/2026-11-01/evaluation.txt), [status](diary/runs/2026-11-01/status.json)).
+>
+> | Check | Synthetic day | Real day |
+> |---|---|---|
+> | Files kept or dropped correctly | 10 / 10 | **15 / 16** |
+> | Events | 6, as in the key | **8, as in the key** |
+> | Pairs of files grouped correctly | 28 / 28 | **66 / 66** |
+> | Chapters | 5–6 | 7 (the vitamin bottle has nobody in it, so leaving it out is allowed) |
+> | Invented names or relationships | none | none: the stranger stays "a person", and Leo is named only because the note says so |
+>
+> Things we did not expect:
+>
+> * **The safety net caught the wrong knife.** The model never noticed the blade in the dramatic walk (it is about twenty pixels long) but did flag the pumpkin-carving tool. So the diary politely says *"You held a small yellow pumpkin"*, and the caregiver's **Check first** list says *"knife seen in 20261101-083000.jpg"*. On the synthetic day it flagged the vegetable knife. Safety system 2, drama department 0.
+> * **The model was not fooled by our casting.** Almost every description calls our older adult "a younger man". The draft is told to say "you" and never mention age, and after one fix (it once turned the pumpkin carver into "a young person" sitting next to you) it does.
+> * **Two layers of filtering beat one.** The motion-blurred photo scored 50.5 on sharpness, just above our threshold, so OpenCV let it through; the vision model then marked it `usable: false` and it never reached the diary.
+> * **Cross-media deduplication works.** A frame from the jacket video was dropped as a near-duplicate of a photo taken a moment earlier.
+> * **The one miss:** two burst photos taken one second apart were kept as different. The hands moved so much that their hashes differ by 17 bits, as much as two genuinely different moments in the visit clip. Loosening the threshold would merge real moments, so we left it.
+> * **The model likes to skip.** On every run, the first draft left out the events that had no caregiver note, as if *"use only the evidence"* meant *"only write about events with notes"*. The code now asks again for the missing ones. Prompts are suggestions; checks in code are rules.
 
 ## Part I. 
 ### Design the interaction after
@@ -605,13 +673,36 @@ Make it yours: show the report on the Mini PiTFT, read it aloud with Piper from 
 > | Playback | Can a user pause, replay, and skip without assistance? |
 > | Overnight operation | Does the task complete, preserve progress, and report failures clearly? |
 >
+> #### What the morning draft actually said
+>
+> From the real day ([full draft](diary/runs/2026-11-01/draft.md)), before any caregiver review:
+>
+> > **10:20 Folding a Jacket.** You and the caregiver folded a jacket together.
+> >
+> > **13:40 Drawing on the Couch.** You sat on a blue couch in an indoor room with large windows, bookshelves, and a green rug. You drew on a magnetic drawing board.
+> >
+> > **15:00 Moving Through the Lobby.** You walked near a staircase in a modern lobby. You also stood near a table with a laptop and a tumbler with a straw, looking out at large windows with a view of trees and buildings.
+> >
+> > **17:00 Playing with Leo.** Your grandson Leo was visiting, and you played with a toy farm together.
+>
+> No feelings, no conversations, no "you enjoyed". It is also a bit flat. Describing a lobby's windows is accurate but not exactly heart-warming, and that is the trade-off of a diary that refuses to make things up.
+>
 > [Insert demonstration video here.]
 >
-> [Insert observations, limitations, and changes made after testing here.]
+> #### Limitations and next steps
+>
+> * **The morning half is not built yet.** There is a draft for review, but no review screen, no Piper narration and no Play / Replay / Next buttons. Part I above is still a design.
+> * **No real overnight run yet.** Every run so far was started by hand in the afternoon; the night shift (start at the bedtime hand-off, read `status.json` in the morning) still has to be tested.
+> * **Time comes from file names.** Our clock times were assumed; a real version should read the capture time stored in the photo or video.
+> * **Small objects slip through.** One frame every 5 s and a 20-pixel blade do not mix. A caregiver-facing safety check would need more frames, or a detector that is actually looking for that.
+> * **Bursts are not duplicates to a hash.** Smarter deduplication (comparing descriptions, or image embeddings) is the obvious next step.
+> * **Cloud, not local.** Frames leave the Pi for OpenRouter. They are re-encoded without metadata, but this changes the privacy story below and would need the family's consent.
 >
 > #### Privacy and User Control
 >
 > Recording will be limited to agreed situations and consenting participants. The user or caregiver will be able to exclude records before processing and remove chapters before playback. The prototype will keep its processing local and provide a way to delete the source material and generated diary.
+>
+> *Update after building:* everything except describing and drafting runs on the Pi. The frames we send to OpenRouter are re-encoded first, which strips EXIF data such as GPS, but they do leave the device. Our friends agreed to appear in the footage published here.
 >
 > Our intended outcome is a small, controllable daily ritual: handing over selected moments at night and receiving an understandable, evidence-based audio diary the next morning.
 

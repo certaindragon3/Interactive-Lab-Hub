@@ -1,6 +1,6 @@
 {
   "state": "Ready for Review",
-  "detail": "5 chapters from 6 events, 0 flagged, 14 s, about $0.0066 this run",
+  "detail": "5 chapters from 6 events, 1 flagged, 1 s, about $0.0011 this run",
   "model": "google/gemini-3.5-flash-lite",
-  "updated": "2026-10-28T18:36:29"
+  "updated": "2026-11-01T11:51:25"
 }
