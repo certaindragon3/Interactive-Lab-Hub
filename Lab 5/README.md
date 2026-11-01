@@ -1,10 +1,12 @@
 # Observant Systems: Overnight Sensation
 
-**Team:**
+> The course instructions are kept in ordinary text. Our answers, experiment notes, images and videos appear in blockquotes.
 
-**Members:** Full Name (netid, github-handle), ...
-
-**Project name:**
+> Team: Jiesen Huang, Serena Tsai, Yuge Xu, Youzhu Jin, Zijii Zhang, and Terence Zhang
+>
+> Members: Jiesen Huang ([certaindragon3](https://github.com/certaindragon3)), Serena Tsai (ht534, [ht534-ui](https://github.com/ht534-ui)), Yuge Xu (yx692, [Yuge-225](https://github.com/Yuge-225)), Youzhu Jin (yj578), Zijii Zhang (zz894), and Terence Zhang ([TerenceZhang29](https://github.com/TerenceZhang29))
+>
+> Project name: Yesterday Together: Audio Diary
 
 <details>
 	<summary><strong>Instructions for Students (Click to Expand)</strong></summary>
