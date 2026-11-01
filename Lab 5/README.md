@@ -601,6 +601,34 @@ Fake a night first: run it for thirty seconds while you walk around, stop it, an
 > * iPhone HEIC/HEVC originals stay on our laptop; `real_day` keeps JPEG and 720p H.264 copies (28 MB in total, instead of 250 MB with one clip over GitHub's 100 MB limit). One clip came from a phone recording in HDR and was tone-mapped to SDR, or the brightness filter would have been judging washed-out colors.
 > * The caregiver's notes ([`caregiver_notes.json`](diary/real_day/caregiver_notes.json)) say two things only: the caregiver folded the jacket with him, and the visitor is his grandson "Leo" (a made-up name). The stranger at the door gets no note, on purpose.
 >
+> #### Four moments on video
+>
+> Each clip shows what the camera saw, with the diary's actual sentence for that event at the bottom. The clock times are the assumed ones; the sound is the original.
+>
+> **10:20 Folding a jacket.** The photos and this clip became a single event.
+>
+> https://github.com/user-attachments/assets/6453e2dd-f31e-49a2-a05d-a94b44df1463
+>
+> [Watch or download the MP4](assets/video/real-day-folding.mp4) · 15.8 seconds
+>
+> **15:00 The long walk.** Yes, that is a blade. No, the model did not notice.
+>
+> https://github.com/user-attachments/assets/4e3a3a66-cc61-423e-a977-5210b624c0cc
+>
+> [Watch or download the MP4](assets/video/real-day-walk.mp4) · first 21 of 60 seconds
+>
+> **16:10 A stranger with a red bag.** No caregiver note, so no name and no relationship.
+>
+> https://github.com/user-attachments/assets/852a4c70-1e93-4a22-b71f-2b5f42490c7f
+>
+> [Watch or download the MP4](assets/video/real-day-door.mp4) · 17.6 seconds
+>
+> **17:00 The grandson visits.** "Leo" exists only because the caregiver's note says so.
+>
+> https://github.com/user-attachments/assets/8af9ce33-dbcc-4833-83c9-dd424c10352d
+>
+> [Watch or download the MP4](assets/video/real-day-visit.mp4) · 10.8 seconds
+>
 > #### Results on Orange
 >
 > The run happened on **Orange** (our Raspberry Pi 5) over ssh. The first full pass described 36 frames in **72 s for about $0.026**; later passes reuse the cached descriptions and cost a fraction of a cent. Logs and outputs: [`diary/runs/2026-11-01`](diary/runs/2026-11-01) ([draft](diary/runs/2026-11-01/draft.md), [evaluation](diary/runs/2026-11-01/evaluation.txt), [status](diary/runs/2026-11-01/status.json)).
@@ -692,7 +720,7 @@ Make it yours: show the report on the Mini PiTFT, read it aloud with Piper from 
 >
 > No feelings, no conversations, no "you enjoyed". It is also a bit flat. Describing a lobby's windows is accurate but not exactly heart-warming, and that is the trade-off of a diary that refuses to make things up.
 >
-> [Insert demonstration video here.]
+> The source moments behind these chapters are on video in [Part H](#part-h) ("Four moments on video").
 >
 > #### Limitations and next steps
 >
