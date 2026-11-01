@@ -233,7 +233,7 @@ Consider how you might use this position based approach to create an interaction
 >
 >   So the gesture is reliable, but only at the distance the thresholds were tuned for. A sturdier rule would divide each distance by the hand's size (say, wrist to the middle-finger knuckle), so it works at any distance. It could also ask the gesture to hold for about half a second, so a single lucky frame can't trigger it.
 >
-> **How I'd use pose tracking in my observant system** *(draft, edit to match your design)*
+> **How I'd use pose tracking in my observant system**
 > * **Hand, before bed:** a Quiet Coyote held up to the camera for one second is the bedtime hand-off ("I'm going to sleep, start watching"). The device acknowledges it by dimming the screen. It's a gesture nobody makes by accident and it needs no button, which fits the thirty-second ritual in Part G. Here, holding still for a moment matters more than the exact pixel thresholds.
 > * **Body, while asleep:** YOLO only says "a person"; body pose says *what they're doing*. Comparing shoulder and hip landmarks tells standing from sitting from lying down. That makes it possible to log "got up at 3:12 and stood by the desk for 4 minutes" instead of "1 person(s) at center/close", without storing any face or image.
 > * **Face:** I'd avoid it overnight, for privacy and because it fails in the dark and from behind (Part B showed my back scores as well as my face for YOLO, but there are no face landmarks from behind).
@@ -500,6 +500,9 @@ Fake a night first: run it for thirty seconds while you walk around, stop it, an
 
 \*\*\***Screenshots or videos of the running system.**\*\*\*
 
+> <details>
+> <summary><strong>Our original plan for Part H (written before we built anything; what we actually built is below)</strong></summary>
+>
 > #### Processing Pipeline
 >
 > The Raspberry Pi will process the selected records locally in the following sequence:
@@ -547,9 +550,11 @@ Fake a night first: run it for thirty seconds while you walk around, stop it, an
 > * Changes required during caregiver review.
 > * Final audio duration and playback behavior.
 >
+> </details>
+>
 > #### What we actually built (and where it drifted from the plan)
 >
-> The plan above was written before we touched a keyboard. Reality negotiated a few terms:
+> The plan (collapsed above) was written before we touched a keyboard. Reality negotiated a few terms:
 >
 > | Plan | What we built | Why |
 > |---|---|---|
@@ -717,6 +722,14 @@ Document all the prototypes and iterations you have designed and worked on. The 
 \*\*\***Include a short video of the whole system**\*\*\*
 
 As always, make sure you document contributions and ideas from others (and AI) explicitly in your writeup.
+
+> #### AI disclosure
+>
+> Our team came up with Yesterday Together and wrote the Part 2 concept, the storyboard table and the design sections of F–I. The friends in `real_day` did the acting (and brought the pumpkin). Part 1 (A–E) was done by Terence Zhang on his Pi.
+>
+> * **Claude Code (Claude Opus 5.5)** wrote the pipeline code ([`overnight_diary.py`](diary/overnight_diary.py), [`evaluate.py`](diary/evaluate.py), [`make_clips.py`](diary/make_clips.py)), had subagents review our footage frame by frame, converted the footage, ran the tests on Orange, and drafted the "what we built", results and limitations write-up in Parts H and I.
+> * **Codex (OpenAI)** and its built-in image generation drew the storyboard illustrations, the AI-generated photos in `sample_day`, and the start frames in `sample_day2`. `x-ai/grok-imagine-video-1.5-lite` turned some of those frames into clips.
+> * **`google/gemini-3.5-flash-lite`** (via OpenRouter) is part of the system: it describes each frame and drafts the diary chapters. That is exactly why the pipeline has evidence rules, a Check first list, and a caregiver in the loop.
 
 You are permitted (but not required) to work in groups and share a turn in; you are expected to make equal contribution on any group work you do, and N people's group project should look like N times the work of a single person's lab. Make sure the page for the group turn in is linked to your personal Interactive Lab Hub page.
 
