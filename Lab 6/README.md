@@ -88,8 +88,12 @@
 > The TV shows the fire and the live station readings together.
 >
 > ### Playthrough video
+
+https://github.com/user-attachments/assets/0d5c3d09-5f16-465e-9bd8-5cbc02dbe43e
+
+> [Download the Digital Campfire MP4](assets/campfire/digital-campfire-demo.mp4) · 57 seconds
 >
-> [Download the Digital Campfire playthrough](assets/campfire/digital-campfire-demo.mp4). The opening shows a proximity sensor up close. Synchronized views then show the players and the shared display as they reveal all three story lines.
+> The opening shows a proximity sensor up close. Synchronized views then show the players and the shared display as they reveal all three story lines.
 >
 > ### Hardware check
 >
