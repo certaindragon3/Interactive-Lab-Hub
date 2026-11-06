@@ -1,6 +1,8 @@
 # Distributed Interaction
 
 > Team progress and documentation are in blockquotes.
+>
+> **Team** · Jiesen Huang, Serena Tsai, Yuge Xu, Youzhu Jin, Zijii Zhang, and Terence Zhang
 
 [Course instructions](https://github.com/IRL-CT/Interactive-Lab-Hub/blob/Fall2026/Lab%206/README.md)
 
