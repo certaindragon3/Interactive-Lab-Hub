@@ -16,6 +16,6 @@ Enter the course MQTT broker password when prompted. Leave the terminal running 
 
 [Full build instructions and station roles](../README.md#part-c-make-your-own)
 
-For the TV display, use the fullscreen and sound buttons in the campfire scene. The fire sound starts on click, loops locally, and gets louder as the fire grows.
+For the TV display, use the fullscreen and sound buttons in the campfire scene. The fire sound starts on click, loops locally, and gets louder as the fire grows. The reset button clears the story and its timer while the stations continue to send readings.
 
 The display loops a level-adjusted edit of [Campfire.wav by Defaultv on Freesound](https://freesound.org/people/Defaultv/sounds/536935/), released under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).

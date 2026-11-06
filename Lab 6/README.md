@@ -73,6 +73,33 @@
 >
 > [The server](campfire/app.py) marks a station offline after two seconds without a reading. Heat and wood must each reach 55%, and wind must stay between 30% and 70% for the fire to count as steady. The storyteller withdraws below 35% before approaching to at least 55%. This lets the same player reveal one line per gesture.
 >
+> On the TV display, the sound button starts a crackling loop that gets louder as the fire grows. The fullscreen button expands the display for the TV. Reset clears the story and starts the steady-fire timer over while all four Pis keep sending data. [Display controls and sound credit](campfire/README.md)
+>
+> ### Key code excerpts
+>
+> Each Pi reads the APDS-9960, maps the calibrated raw range to 0–1, and sends the result on that station's MQTT topic. The message is sent every 0.2 seconds so that a held hand still registers and the server can tell when a station stops reporting. [Publisher source](campfire/publish.py)
+>
+> ```python
+> raw = sensor.proximity
+> level = max(0.0, min(1.0, (raw - args.low) / (args.high - args.low)))
+> if client.is_connected():
+>     client.publish(args.topic, json.dumps({"level": round(level, 3)}), qos=0, retain=False)
+> stop.wait(0.2)
+> ```
+>
+> On the laptop, a low Story reading arms one gesture. The next high reading consumes it and reveals a line only if the fire has stayed steady for three seconds. Starting the timer again after a reveal gives the three fire stations another round to hold together. [Server source](campfire/app.py)
+>
+> ```python
+> def _read_story_gesture(self, level, now):
+>     if level < 0.35:
+>         self.story_armed = True
+>     elif level >= 0.55 and self.story_armed:
+>         self.story_armed = False
+>         if self._stable_progress(now) == 1.0 and self.lines_unlocked < len(STORY):
+>             self.lines_unlocked += 1
+>             self.steady_since = now
+> ```
+>
 > ### Build photos
 >
 > Each station has its own Raspberry Pi and a wired APDS-9960 proximity sensor. The four photos below show the hardware used in the playthrough.
@@ -97,8 +124,27 @@ https://github.com/user-attachments/assets/0d5c3d09-5f16-465e-9bd8-5cbc02dbe43e
 >
 > ### Hardware check
 >
-> Four simulated publishers drove the shared display through a local MQTT broker. The test checked a fresh story gesture, a held hand, excess wind, and an offline station. In the hardware playthrough, all four Pis sent readings through the course broker at the same time, and the team unlocked all three story lines on the shared display. Testing with two people outside the team and the post-test reflection are pending.
+> Four simulated publishers drove the shared display through a local MQTT broker. The test checked a fresh story gesture, a held hand, excess wind, and an offline station. In the hardware playthrough, all four Pis sent readings through the course broker at the same time, and the team unlocked all three story lines on the shared display.
+>
+> ### Outside-team user testing
+>
+> Feedback from at least two people outside the team is still pending. For each session, we will record what the player expects before trying the controls, what surprises them, and what they would change, along with a photo or video of use.
+>
+> #### AI-generated critique for planning the tests
+>
+> These are hypotheses to check in the sessions.
+>
+> - **Wind station.** A first-time player might expect more wind to make the fire bigger, then be surprised when it weakens. Test whether they notice the target band on the TV and can find the middle of the range without coaching. A visible sweet-spot cue could make the response easier to learn.
+> - **Story station.** A first-time player might hold a hand near the sensor while waiting for the timer. Test whether the screen makes it clear that they should withdraw and approach again after the fire is steady. A brief `Move away, then come closer` prompt could help at that moment.
+>
+> ### Reflection
+>
+> The shared display gave everyone the same place to look. In the recorded playthrough, the fire grew as the players brought their stations into range. The group then revealed three lines with separate Story gestures, and the text stayed on screen after the fire died down. Keeping the story visible gave the group time to read the ending after releasing the sensors.
+>
+> The Wind station exposed two distinct failure modes during setup. At first the Pi could not read the APDS-9960. It started reporting after we swapped both the sensor and the cable. Later it stopped publishing even though the Pi could still read the sensor. Restarting its publisher brought the meter back. The two-second timeout made the missing stream visible on the TV, while checking the sensor and the MQTT process separately showed where to look next.
+>
+> Each Pi normalizes its own proximity reading because calibration belongs to the individual sensor. The laptop combines the four MQTT streams, runs the fire and timer, and decides when a story gesture counts. This keeps one shared notion of when the fire is steady. The browser displays that state and changes the flame and sound together. For a next iteration, we would give players a short practice round to find their sensor's range, especially the Wind station's middle band, and see whether first-time storytellers discover the release gesture without help.
 
 ## AI Disclosure
 
-> OpenAI Codex helped configure and verify the MQTT test, summarize the team’s notes, implement and document the prototype, and edit the team’s photos and playthrough footage.
+> OpenAI Codex helped configure and verify the MQTT test, summarize the team’s notes, implement and document the prototype, edit the team’s photos and playthrough footage, and generate critique hypotheses for future user testing.

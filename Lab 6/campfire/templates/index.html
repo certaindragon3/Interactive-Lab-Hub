@@ -101,6 +101,7 @@
       cursor: pointer;
     }
     .controls button[hidden] { display: none; }
+    .controls button:disabled { opacity: .55; cursor: wait; }
     .controls button:hover, .controls button[aria-pressed="true"] { color: var(--gold); border-color: #917052; }
     .controls button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
     .controls svg { width: 48%; height: 48%; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
@@ -202,6 +203,9 @@
           </button>
           <button id="fullscreen-button" type="button" aria-label="Enter fullscreen" title="Enter fullscreen" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg>
+          </button>
+          <button id="reset-button" type="button" aria-label="Reset story" title="Reset story">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 6m-2-6V5m0 6h6"/></svg>
           </button>
         </div>
         <p class="connection" id="connection" role="status">Connecting…</p>
@@ -320,6 +324,7 @@
     const fireAudio = document.querySelector('#fire-audio');
     const soundButton = document.querySelector('#sound-button');
     const fullscreenButton = document.querySelector('#fullscreen-button');
+    const resetButton = document.querySelector('#reset-button');
     fireAudio.volume = .1;
 
     soundButton.addEventListener('click', async () => {
@@ -366,6 +371,7 @@
       };
     });
     let shownLines = [];
+    let resetVersion = 0;
 
     function setText(element, text) {
       if (element.textContent !== text) element.textContent = text;
@@ -435,13 +441,32 @@
       setText(steadyLabel, progressCopy);
     }
 
+    resetButton.addEventListener('click', async () => {
+      resetVersion++;
+      resetButton.disabled = true;
+      try {
+        const response = await fetch('/api/story/reset', {method: 'POST', signal: AbortSignal.timeout(2500)});
+        if (!response.ok) throw new Error('Story reset failed');
+        renderStory([]);
+        progress.value = 0;
+        setText(steadyLabel, 'Hold steady for 3 seconds');
+        resetButton.title = 'Reset story';
+      } catch {
+        resetButton.title = 'Reset failed. Try again.';
+      } finally {
+        resetButton.disabled = false;
+      }
+    });
+
     async function poll() {
+      const version = resetVersion;
       try {
         const response = await fetch('/api/state', {cache: 'no-store', signal: AbortSignal.timeout(2500)});
         if (!response.ok) throw new Error(`Campfire request failed (${response.status})`);
-        render(await response.json());
+        const state = await response.json();
+        if (version === resetVersion && !resetButton.disabled) render(state);
       } catch {
-        render(null);
+        if (version === resetVersion && !resetButton.disabled) render(null);
       } finally {
         window.setTimeout(poll, 250);
       }

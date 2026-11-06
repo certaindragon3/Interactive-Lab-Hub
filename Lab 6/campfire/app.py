@@ -42,6 +42,13 @@ class Campfire:
             with self.lock:
                 self._advance(monotonic())
 
+    def reset_story(self):
+        with self.lock:
+            self.lines_unlocked = 0
+            self.steady_since = None
+            self.story_armed = False
+            self._advance(monotonic())
+
     def _stations(self, now):
         stations = {}
         for role in ROLES:
@@ -110,6 +117,12 @@ def index():
 @app.get("/api/state")
 def api_state():
     return campfire.snapshot(), {"Cache-Control": "no-store"}
+
+
+@app.post("/api/story/reset")
+def reset_story():
+    campfire.reset_story()
+    return "", 204
 
 
 def parse_level(payload):
