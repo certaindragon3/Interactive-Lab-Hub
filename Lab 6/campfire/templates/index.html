@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Digital Campfire</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --text: #fff1de;
+      --muted: #c6b5a9;
+      --panel: #211a19;
+      --line: #4e3d35;
+      --accent: #ffb676;
+      --ready: #e3c287;
+      font-family: system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse at 35% 0%, #30201d, #141317 72%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    main { max-width: 1100px; margin: auto; padding: 28px clamp(16px, 4vw, 42px) 36px; }
+    h1, h2, h3, p, figure { margin: 0; }
+    .eyebrow {
+      color: var(--accent);
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    h1, .story h2 { font-family: Georgia, serif; font-weight: 500; }
+    h1 { font-size: clamp(2.65rem, 6vw, 5rem); line-height: 1.05; margin-block: 5px 8px; }
+    .instructions { color: var(--muted); font-size: clamp(1rem, 1.8vw, 1.2rem); line-height: 1.45; }
+    .connection { min-height: 1.5rem; margin-block: 8px 4px; color: var(--accent); font-size: .9rem; }
+    .stage { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
+    .scene, .story, .station { border: 1px solid var(--line); border-radius: 14px; }
+    .scene {
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+      display: grid;
+      place-items: end center;
+      background: #1b171c;
+      --flame-size: .2;
+      --flame-light: .12;
+      --glow-light: .07;
+    }
+    .scene svg { display: block; width: 100%; height: auto; }
+    .glow { opacity: var(--glow-light); transition: opacity 350ms ease-out; }
+    .flames {
+      transform-box: fill-box;
+      transform-origin: center bottom;
+      transform: scale(.95, var(--flame-size));
+      opacity: var(--flame-light);
+      transition: transform 350ms ease-out, opacity 350ms ease-out;
+    }
+    .flicker {
+      transform-box: fill-box;
+      transform-origin: center bottom;
+      animation: flicker 900ms ease-in-out infinite alternate;
+    }
+    @keyframes flicker {
+      from { transform: scale(.97, .95) skewX(-2deg); }
+      to { transform: scale(1.03, 1.02) skewX(2deg); }
+    }
+    .scene figcaption {
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      background: #221b20;
+      border: 1px solid #5d463f;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: .9rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .story { background: var(--panel); min-width: 0; padding: clamp(17px, 2.6vw, 26px); }
+    .story h2 { font-size: clamp(1.7rem, 3vw, 2.5rem); margin: 4px 0 12px; }
+    .story-lines { min-height: 4.5rem; margin-bottom: 18px; }
+    .story-lines p { font-family: Georgia, serif; font-size: 1.15rem; line-height: 1.45; }
+    .story-lines p + p { margin-top: .65rem; }
+    .story-lines .waiting { color: var(--muted); }
+    .progress-label { font-size: .9rem; margin-bottom: 5px; color: var(--muted); }
+    progress { appearance: none; display: block; width: 100%; height: 9px; border: 0; border-radius: 8px; overflow: hidden; background: #483a35; }
+    progress::-webkit-progress-bar { background: #483a35; }
+    progress::-webkit-progress-value { background: var(--accent); }
+    progress::-moz-progress-bar { background: var(--accent); }
+    .stations { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+    .station { padding: 15px 17px; background: var(--panel); }
+    .station h2 { font-size: 1.32rem; line-height: 1.2; }
+    .station-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .level { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .meter {
+      position: relative;
+      height: 12px;
+      margin: 13px 0 9px;
+      border-radius: 6px;
+      background: #493d38;
+      overflow: hidden;
+    }
+    .fill { height: 100%; width: 0; background: var(--accent); transition: width 180ms ease-out; }
+    .target-band {
+      position: absolute;
+      inset: 0 auto 0 var(--target-start, 55%);
+      width: var(--target-width, 45%);
+      border-inline-start: 2px solid #fff1de;
+      background: #fff4da24;
+    }
+    [data-station="wind"] .target-band { --target-start: 30%; --target-width: 40%; border-inline-end: 2px solid #fff1de; }
+    .station-state { color: var(--muted); font-weight: 600; font-size: .98rem; }
+    .station[data-ready="true"] .station-state { color: var(--ready); }
+    .target-copy { color: var(--muted); font-size: .86rem; margin-top: 4px; }
+    @media (max-width: 760px) {
+      .stage { grid-template-columns: 1fr; }
+      .scene svg { max-height: 295px; }
+      .stations { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 360px) {
+      .stations { grid-template-columns: 1fr; }
+      .station { padding: 12px 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Distributed interaction</p>
+      <h1>Digital Campfire</h1>
+      <p class="instructions">Use your hand to tend the fire. Hold Heat, Wood, and Wind in range so the Story station can reveal the next line.</p>
+      <p class="connection" id="connection" role="status">Connecting to the campfire…</p>
+    </header>
+
+    <div class="stage">
+      <figure class="scene" id="scene">
+        <svg viewBox="0 0 520 330" aria-hidden="true" focusable="false">
+          <defs>
+            <radialGradient id="light" cx="50%" cy="67%" r="45%">
+              <stop stop-color="#e68139" stop-opacity=".9"/>
+              <stop offset="1" stop-color="#e68139" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="outer" x2="0" y2="1">
+              <stop stop-color="#ff6c38"/>
+              <stop offset="1" stop-color="#df4626"/>
+            </linearGradient>
+            <linearGradient id="inner" x2="0" y2="1">
+              <stop stop-color="#ffd57a"/>
+              <stop offset="1" stop-color="#ff954e"/>
+            </linearGradient>
+          </defs>
+          <g fill="#ab8e88" opacity=".66">
+            <circle cx="106" cy="78" r="1.5"/><circle cx="169" cy="47" r="1.4"/>
+            <circle cx="228" cy="78" r="1.3"/><circle cx="315" cy="59" r="1.4"/>
+            <circle cx="365" cy="32" r="1.7"/><circle cx="408" cy="92" r="1.5"/>
+            <circle cx="478" cy="58" r="1.3"/><circle cx="60" cy="108" r="1.3"/>
+          </g>
+          <path fill="#30242a" d="M0 237 71 179l39 19 53-55 65 54 67-35 52 39 73-45 100 79v95H0Z"/>
+          <path fill="#241d24" d="m0 233 76-12 70 25 71-20 59 14 65-24 79 19 100-24v119H0Z"/>
+          <rect class="glow" width="520" height="330" fill="url(#light)"/>
+          <ellipse cx="260" cy="280" rx="112" ry="20" fill="#151317" opacity=".66"/>
+          <g fill="#6a5150" stroke="#281e22" stroke-width="3">
+            <path d="m163 269 18-12 21 4 9 12-18 12-24-2Z"/>
+            <path d="m197 289 15-11 24-1 13 12-13 11-27 1Z"/>
+            <path d="m246 295 16-12 24 1 12 10-10 10-29 1Z"/>
+            <path d="m296 290 13-11 22-1 15 11-8 10-28 2Z"/>
+            <path d="m331 271 12-12 20-1 15 12-8 13-24 3Z"/>
+          </g>
+          <g stroke-linecap="round">
+            <path d="m210 267 99 10m-6-16-91 19" fill="none" stroke="#512d24" stroke-width="16"/>
+            <path d="m210 265 99 10m-6-16-91 19" fill="none" stroke="#8a4a31" stroke-width="6"/>
+          </g>
+          <g class="flames">
+            <g class="flicker">
+              <path fill="url(#outer)" d="M259 274c-42 0-66-22-62-53 2-16 14-27 21-45 4 13 2 22 8 27 8-20 31-30 32-59 1-12-1-26 2-43 17 21 26 39 25 65-1 16 6 25 13 31 1-16 8-24 12-36 0 28 20 43 17 68-3 31-31 45-68 45Z"/>
+              <path fill="url(#inner)" d="M260 273c-28 0-45-16-42-36 2-12 9-16 14-29 2 12 5 18 12 22 0-27 24-41 23-70 15 16 18 30 17 48 0 11 5 17 11 23 4-8 8-16 9-25 9 15 9 30 4 42-7 17-25 25-48 25Z"/>
+              <path fill="#fff2b2" d="M260 272c-15 0-23-8-23-18 1-10 10-14 11-24 5 7 8 14 9 17 3-12 14-17 15-33 8 10 8 20 7 28 9-5 11-10 12-14 6 10 5 24 0 31-6 9-17 13-31 13Z"/>
+            </g>
+            <g fill="#ffab57">
+              <circle cx="226" cy="158" r="3"/><circle cx="291" cy="137" r="2.5"/>
+              <circle cx="314" cy="121" r="2"/><circle cx="241" cy="129" r="2"/>
+            </g>
+          </g>
+        </svg>
+        <figcaption>Fire intensity <strong id="fire-level">0%</strong></figcaption>
+      </figure>
+
+      <section class="story" aria-labelledby="story-heading" data-story-length="{{ story_length|default(0) }}">
+        <p class="eyebrow">By the fire</p>
+        <h2 id="story-heading">The story</h2>
+        <div class="story-lines" id="story-lines" aria-live="polite" aria-relevant="additions text">
+          <p class="waiting">When the fire is steady, the storyteller moves their hand away and then close again.</p>
+        </div>
+        <p class="progress-label" id="steady-label">Hold steady for 3 seconds</p>
+        <progress id="steady-progress" max="1" value="0" aria-labelledby="steady-label"></progress>
+      </section>
+    </div>
+
+    <section class="stations" aria-label="Campfire stations">
+      <article class="station" data-station="heat">
+        <div class="station-head"><h2 id="heat-label">Heat</h2><span class="level">—</span></div>
+        <div class="meter" role="meter" aria-labelledby="heat-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Offline">
+          <div class="fill"></div><div class="target-band"></div>
+        </div>
+        <p class="station-state">Offline</p>
+        <p class="target-copy">Target 55% or higher</p>
+      </article>
+      <article class="station" data-station="fuel">
+        <div class="station-head"><h2 id="fuel-label">Wood</h2><span class="level">—</span></div>
+        <div class="meter" role="meter" aria-labelledby="fuel-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Offline">
+          <div class="fill"></div><div class="target-band"></div>
+        </div>
+        <p class="station-state">Offline</p>
+        <p class="target-copy">Target 55% or higher</p>
+      </article>
+      <article class="station" data-station="wind">
+        <div class="station-head"><h2 id="wind-label">Wind</h2><span class="level">—</span></div>
+        <div class="meter" role="meter" aria-labelledby="wind-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Offline">
+          <div class="fill"></div><div class="target-band"></div>
+        </div>
+        <p class="station-state">Offline</p>
+        <p class="target-copy">Target 30% to 70%</p>
+      </article>
+      <article class="station" data-station="story">
+        <div class="station-head"><h2 id="story-label">Story</h2><span class="level">—</span></div>
+        <div class="meter" role="meter" aria-labelledby="story-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="Offline">
+          <div class="fill"></div><div class="target-band"></div>
+        </div>
+        <p class="station-state">Offline</p>
+        <p class="target-copy">Start below 35%, then reach 55%</p>
+      </article>
+    </section>
+  </main>
+  <script>
+    const scene = document.querySelector('#scene');
+    const fireLevel = document.querySelector('#fire-level');
+    const connection = document.querySelector('#connection');
+    const storyLines = document.querySelector('#story-lines');
+    const storyLength = Number(storyLines.closest('.story').dataset.storyLength);
+    const progress = document.querySelector('#steady-progress');
+    const steadyLabel = document.querySelector('#steady-label');
+    const waitingCopy = storyLines.textContent.trim();
+    const stations = [...document.querySelectorAll('[data-station]')].map((card) => {
+      const role = card.dataset.station;
+      return {
+        role,
+        card,
+        min: role === 'wind' ? .3 : .55,
+        max: role === 'wind' ? .7 : 1,
+        value: card.querySelector('.level'),
+        status: card.querySelector('.station-state'),
+        meter: card.querySelector('.meter'),
+        fill: card.querySelector('.fill'),
+      };
+    });
+    let shownLines = [];
+
+    function setText(element, text) {
+      if (element.textContent !== text) element.textContent = text;
+    }
+
+    function renderStation(station, {level, online}, connected, steady, complete) {
+      const percentage = online ? Math.floor(level * 100 + 1e-7) : 0;
+      let status = 'In range';
+      let ready = false;
+      if (!connected) status = 'Unavailable';
+      else if (!online) status = 'Offline';
+      else if (station.role === 'story' && complete) status = 'Story complete';
+      else if (station.role === 'story') {
+        ready = level < .35 && steady >= 1;
+        if (level < .35) status = ready ? 'Move closer' : 'Wait for steady fire';
+        else status = 'Move back before trying again';
+      } else if (level < station.min) status = 'Move closer';
+      else if (level > station.max) status = 'Move back';
+      else ready = true;
+      station.card.dataset.ready = ready;
+      setText(station.value, online ? `${percentage}%` : '—');
+      setText(station.status, status);
+      station.fill.style.width = online ? `${level * 100}%` : '0%';
+      station.meter.setAttribute('aria-valuenow', percentage);
+      station.meter.setAttribute('aria-valuetext', online ? `${percentage} percent, ${status}` : status);
+    }
+
+    function renderStory(lines) {
+      const sharedPrefix = shownLines.length <= lines.length && shownLines.every((line, i) => line === lines[i]);
+      if (sharedPrefix && shownLines.length === lines.length) return;
+
+      const append = sharedPrefix && shownLines.length > 0;
+      if (!append) storyLines.replaceChildren();
+      for (const line of lines.slice(append ? shownLines.length : 0)) {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = line;
+        storyLines.append(paragraph);
+      }
+      if (!lines.length) {
+        const waiting = document.createElement('p');
+        waiting.className = 'waiting';
+        waiting.textContent = waitingCopy;
+        storyLines.append(waiting);
+      }
+      shownLines = lines;
+    }
+
+    function render(state) {
+      setText(connection, state ? '' : 'Connection lost. Reconnecting to the campfire…');
+      const fire = state?.fire ?? 0;
+      scene.style.setProperty('--flame-size', .2 + fire * .8);
+      scene.style.setProperty('--flame-light', .12 + fire * .88);
+      scene.style.setProperty('--glow-light', .07 + fire * .93);
+      setText(fireLevel, state ? `${Math.round(fire * 100)}%` : '—');
+      const steady = state?.stable_progress ?? 0;
+      const complete = storyLength > 0 && state?.story.length >= storyLength;
+      for (const station of stations) {
+        const sample = state?.stations[station.role] ?? {level: 0, online: false};
+        renderStation(station, sample, Boolean(state), steady, complete);
+      }
+      if (state) renderStory(state.story);
+      progress.value = steady;
+      let progressCopy = 'Hold steady for 3 seconds';
+      if (complete) progressCopy = 'Story complete';
+      else if (steady >= 1) progressCopy = 'Fire steady';
+      setText(steadyLabel, progressCopy);
+    }
+
+    async function poll() {
+      try {
+        const response = await fetch('/api/state', {cache: 'no-store', signal: AbortSignal.timeout(2500)});
+        if (!response.ok) throw new Error(`Campfire request failed (${response.status})`);
+        render(await response.json());
+      } catch {
+        render(null);
+      } finally {
+        window.setTimeout(poll, 250);
+      }
+    }
+
+    poll();
+  </script>
+</body>
+</html>
