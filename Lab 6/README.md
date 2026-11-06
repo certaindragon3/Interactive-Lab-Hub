@@ -73,8 +73,32 @@
 >
 > [The server](campfire/app.py) marks a station offline after two seconds without a reading. Heat and wood must each reach 55%, and wind must stay between 30% and 70% for the fire to count as steady. The storyteller withdraws below 35% before approaching to at least 55%. This lets the same player reveal one line per gesture.
 >
-> Four simulated publishers drove the shared display through a local MQTT broker. The test checked a fresh story gesture, a held hand, excess wind, and an offline station. In a separate smoke test, Orange sent a real proximity reading through the course broker and the laptop received it. Four-station hardware testing, station photos, testing with two people outside the team, and the post-test reflection are pending.
+> ### Build photos
+>
+> Each station has its own Raspberry Pi and a wired APDS-9960 proximity sensor. The four photos below show the hardware used in the playthrough.
+>
+> | Station hardware 1 | Station hardware 2 |
+> | --- | --- |
+> | ![First Raspberry Pi and its wired APDS-9960 on the tabletop](assets/campfire/station-01.jpg) | ![Second Raspberry Pi and its wired APDS-9960 on the tabletop](assets/campfire/station-02.jpg) |
+> | **Station hardware 3** | **Station hardware 4** |
+> | ![Third Raspberry Pi and its wired APDS-9960 among the tabletop cables](assets/campfire/station-03.jpg) | ![Fourth Raspberry Pi and its wired APDS-9960 beside a black case](assets/campfire/station-04.jpg) |
+>
+> ![Shared TV showing the campfire and several station meters](assets/campfire/shared-display.jpg)
+>
+> The TV shows the fire and the live station readings together.
+>
+> ### Playthrough video
+
+https://github.com/user-attachments/assets/0d5c3d09-5f16-465e-9bd8-5cbc02dbe43e
+
+> [Download the Digital Campfire MP4](assets/campfire/digital-campfire-demo.mp4) · 57 seconds
+>
+> The opening shows a proximity sensor up close. Synchronized views then show the players and the shared display as they reveal all three story lines.
+>
+> ### Hardware check
+>
+> Four simulated publishers drove the shared display through a local MQTT broker. The test checked a fresh story gesture, a held hand, excess wind, and an offline station. In the hardware playthrough, all four Pis sent readings through the course broker at the same time, and the team unlocked all three story lines on the shared display. Testing with two people outside the team and the post-test reflection are pending.
 
 ## AI Disclosure
 
-> OpenAI Codex helped configure and verify the MQTT test, summarize the team’s notes, and implement and document the Digital Campfire prototype.
+> OpenAI Codex helped configure and verify the MQTT test, summarize the team’s notes, implement and document the prototype, and edit the team’s photos and playthrough footage.
