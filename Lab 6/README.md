@@ -128,14 +128,11 @@ https://github.com/user-attachments/assets/0d5c3d09-5f16-465e-9bd8-5cbc02dbe43e
 >
 > ### Outside-team user testing
 >
-> Feedback from at least two people outside the team is still pending. For each session, we will record what the player expects before trying the controls, what surprises them, and what they would change, along with a photo or video of use.
+> Two people outside our team tried Digital Campfire. We grouped their comments below.
 >
-> #### AI-generated critique for planning the tests
->
-> These are hypotheses to check in the sessions.
->
-> - **Wind station.** A first-time player might expect more wind to make the fire bigger, then be surprised when it weakens. Test whether they notice the target band on the TV and can find the middle of the range without coaching. A visible sweet-spot cue could make the response easier to learn.
-> - **Story station.** A first-time player might hold a hand near the sensor while waiting for the timer. Test whether the screen makes it clear that they should withdraw and approach again after the fire is steady. A brief `Move away, then come closer` prompt could help at that moment.
+> - **Controlling the fire.** They found that small changes in hand distance mattered. Wind was the hardest station to hold in range, and even a slight movement could push it out of the target band.
+> - **Following the story.** They described the story as very linear. They also felt that it formed a complete sequence and that the campfire setting fit what they expected from the story.
+> - **Being part of the scene.** They found the experience playful and engaging. Helping keep the fire going made it feel as though they were there telling the story together.
 >
 > ### Reflection
 >
@@ -143,8 +140,10 @@ https://github.com/user-attachments/assets/0d5c3d09-5f16-465e-9bd8-5cbc02dbe43e
 >
 > The Wind station exposed two distinct failure modes during setup. At first the Pi could not read the APDS-9960. It started reporting after we swapped both the sensor and the cable. Later it stopped publishing even though the Pi could still read the sensor. Restarting its publisher brought the meter back. The two-second timeout made the missing stream visible on the TV, while checking the sensor and the MQTT process separately showed where to look next.
 >
-> Each Pi normalizes its own proximity reading because calibration belongs to the individual sensor. The laptop combines the four MQTT streams, runs the fire and timer, and decides when a story gesture counts. This keeps one shared notion of when the fire is steady. The browser displays that state and changes the flame and sound together. For a next iteration, we would give players a short practice round to find their sensor's range, especially the Wind station's middle band, and see whether first-time storytellers discover the release gesture without help.
+> Each Pi normalizes its own proximity reading because calibration belongs to the individual sensor. The laptop combines the four MQTT streams, runs the fire and timer, and decides when a story gesture counts. This keeps one shared notion of when the fire is steady. The browser displays that state and changes the flame and sound together.
+>
+> The outside-team feedback gave us two concrete things to try next. We would start with a short practice round and test whether a wider Wind band lets players find and hold the target more comfortably. We would also try giving the storyteller a choice between two endings so the group can influence where the story goes as well as when the next line appears.
 
 ## AI Disclosure
 
-> OpenAI Codex helped configure and verify the MQTT test, summarize the team’s notes, implement and document the prototype, edit the team’s photos and playthrough footage, and generate critique hypotheses for future user testing.
+> OpenAI Codex helped configure and verify the MQTT test, summarize the team’s notes, implement and document the prototype, edit the team’s photos and playthrough footage, and organize the tester feedback reported by the team.
