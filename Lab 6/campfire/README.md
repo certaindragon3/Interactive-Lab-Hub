@@ -15,3 +15,7 @@ If you already have this fork checked out on `Fall2026`, run `git pull --ff-only
 Enter the course MQTT broker password when prompted. Leave the terminal running during the demo. When the shared screen says the fire is steady, move your hand away from the sensor, then move it closer to reveal a line. Press Ctrl+C to stop the station.
 
 [Full build instructions and station roles](../README.md#part-c-make-your-own)
+
+For the TV display, use the fullscreen and sound buttons in the campfire scene. The fire sound starts on click, loops locally, and gets louder as the fire grows.
+
+The display loops a level-adjusted edit of [Campfire.wav by Defaultv on Freesound](https://freesound.org/people/Defaultv/sounds/536935/), released under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
