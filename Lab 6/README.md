@@ -106,15 +106,29 @@
 >
 > Each station has its own Raspberry Pi and a wired APDS-9960 proximity sensor. The four photos below show the hardware used in the playthrough.
 >
+> ![Overhead view of the table with four Raspberry Pis, sensors, and power cables](assets/campfire/table-overview.jpg)
+>
+> All four stations shared one table. Players could pick up their sensors while looking at the same screen.
+>
 > | Station hardware 1 | Station hardware 2 |
 > | --- | --- |
 > | ![First Raspberry Pi and its wired APDS-9960 on the tabletop](assets/campfire/station-01.jpg) | ![Second Raspberry Pi and its wired APDS-9960 on the tabletop](assets/campfire/station-02.jpg) |
 > | **Station hardware 3** | **Station hardware 4** |
 > | ![Third Raspberry Pi and its wired APDS-9960 among the tabletop cables](assets/campfire/station-03.jpg) | ![Fourth Raspberry Pi and its wired APDS-9960 beside a black case](assets/campfire/station-04.jpg) |
 >
+> ### Shared play display
+>
+> ![Complete widescreen Digital Campfire interface with the flame, all three story lines, and four station meters](assets/campfire/playthrough-panel.png)
+>
+> The full 16:9 interface with the story complete and simulated station readings.
+>
 > ![Shared TV showing the campfire and several station meters](assets/campfire/shared-display.jpg)
 >
 > The TV shows the fire and the live station readings together.
+>
+> ![Players standing beside the shared TV and the station table](assets/campfire/player-scene.jpg)
+>
+> Players at the installation with the display waiting for a steady fire.
 >
 > ### Playthrough video
 
