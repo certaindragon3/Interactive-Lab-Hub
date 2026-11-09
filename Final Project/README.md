@@ -2,19 +2,11 @@
 
 Final project concept · Jiesen Huang · submitted November 9, 2026
 
-**How to read this page.** Section 1 is my own initial idea notes, kept exactly as I first wrote them, with no AI involvement. Everything from Section 2 onward was developed in a question-and-answer session with an AI assistant and drafted with its help. The [AI disclosure](#ai-disclosure) at the end says who did what.
+**How to read this page.** Section 1 lists the three ideas I came up with myself. Everything from Section 2 onward was developed in a question-and-answer session with an AI assistant and drafted with its help. The [AI disclosure](#ai-disclosure) at the end says who did what.
 
-## 1. Initial idea notes (my own, no AI assistance)
+## 1. Initial idea notes (my own ideas)
 
-These are the three ideas as I wrote them down, unedited.
-
-> 1.冥想禅修触控板，五个手指分别对应五个电容，用电脑屏幕做氛围灯，连接applewatch的心率传感器，testflight做app或者买心率传感器，看看有没有认真在冥想
->
-> 2.披萨制作器，屏幕上面有UI，摇杆做磨坊，按压按钮做擀面，麦克风吹气啥指示，4040mapping火候大小做烤箱。3D打印多个交互外壳。
->
-> 3. 跳舞打分器，摄像头，大电视，教授舞蹈之后可以进行模仿，根据图像识别小模型进行动作判定。
-
-English translation (translated by the AI assistant, meaning unchanged):
+These are the three ideas I started with. The ideas are mine; the wording below was prepared with AI help and keeps the content of my notes without adding to it.
 
 1. **Meditation touchpad.** Five fingers rest on five capacitive pads. A computer screen acts as an ambient light. An Apple Watch heart-rate sensor (through a TestFlight app) or a purchased heart-rate sensor checks whether the person is really meditating.
 2. **Pizza maker.** A screen shows the UI. A joystick is the mill, a pressed button rolls the dough, blowing into a microphone gives some kind of cue, and the VCNL4040 maps hand distance to oven heat. Several 3D-printed shells give each interaction its own body.
@@ -122,4 +114,4 @@ Fall-backs for single parts:
 
 ## AI disclosure
 
-The three ideas in Section 1 are mine and are reproduced as I wrote them. I then discussed them with Claude (Claude Code). Claude questioned each idea, pointed out the heart-rate, demo-setting and Pi-performance problems recorded in Section 2, and recommended the pizza maker. I agreed with those assessments. Claude also proposed the IMU rolling pin, the order card with star scoring, the overlapping station order, the wider cumulative oven band, the single-Pi baseline, the timeline and the fall-back levels, which I accepted. Claude translated my notes into English and drafted this document from our discussion. The project name is mine.
+The three ideas in Section 1 are mine; Claude prepared the wording shown there from my notes without adding content. I then discussed the ideas with Claude (Claude Code). Claude questioned each idea, pointed out the heart-rate, demo-setting and Pi-performance problems recorded in Section 2, and recommended the pizza maker. I agreed with those assessments. Claude also proposed the IMU rolling pin, the order card with star scoring, the overlapping station order, the wider cumulative oven band, the single-Pi baseline, the timeline and the fall-back levels, which I accepted. Claude drafted this document from our discussion. The project name is mine.
