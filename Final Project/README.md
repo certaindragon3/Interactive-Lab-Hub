@@ -114,4 +114,18 @@ Fall-backs for single parts:
 
 ## AI disclosure
 
-The three ideas in Section 1 are mine; Claude prepared the wording shown there from my notes without adding content. I then discussed the ideas with Claude (Claude Code). Claude questioned each idea, pointed out the heart-rate, demo-setting and Pi-performance problems recorded in Section 2, and recommended the pizza maker. I agreed with those assessments. Claude also proposed the IMU rolling pin, the order card with star scoring, the overlapping station order, the wider cumulative oven band, the single-Pi baseline, the timeline and the fall-back levels, which I accepted. Claude drafted this document from our discussion. The project name is mine.
+I used Claude (Claude Code) as a critic and a drafting tool. The ideas, the direction and the final calls are mine.
+
+**What I decided.**
+
+- **The three starting ideas.** I came up with the meditation touchpad, the pizza maker and the dance scorer, including the pizza maker's joystick mill, microphone and VCNL4040 oven.
+- **How to use the AI.** I asked it to challenge my ideas with questions instead of generating ideas for me.
+- **Which idea to build.** After weighing the objections to each idea, I chose the pizza maker and set the other two aside.
+- **What to adopt.** I reviewed every suggestion listed below and chose to take it into the concept.
+- **The name.** GIANTPIZZA GRILL!!! is mine.
+
+**What the AI contributed.**
+
+- **Critique.** Claude raised the heart-rate, demo-setting and Pi-performance problems recorded in Section 2 and recommended the pizza maker.
+- **Design suggestions I adopted.** The IMU rolling pin in place of my button, the order card with star scoring, the overlapping station order, the wider cumulative oven band, the single-Pi baseline, the timeline and the fall-back levels.
+- **Writing.** Claude prepared the English wording of Section 1 from my notes without adding content, and drafted the rest of this document from our discussion.
