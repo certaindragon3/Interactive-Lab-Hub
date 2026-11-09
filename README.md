@@ -15,5 +15,5 @@ Please place links here to the README.md's for each of your labs here:
 
 [Lab 6. Little Interactions Everywhere](Lab%206/)
 
-Final Project
+[Final Project. GIANTPIZZA GRILL!!!](Final%20Project/)
 

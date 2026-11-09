@@ -2,7 +2,7 @@
 
 Final project concept · Jiesen Huang · submitted November 9, 2026
 
-**How to read this page.** Section 1 lists the three ideas I came up with myself. Everything from Section 2 onward was developed in a question-and-answer session with an AI assistant and drafted with its help. The [AI disclosure](#ai-disclosure) at the end says who did what.
+**How to read this page.** Section 1 lists the three ideas I came up with myself. Everything from Section 2 onward was developed in a question-and-answer session with an AI assistant and drafted with its help. All illustrations on this page are AI-generated sketches of a proposed design; nothing shown has been built or tested yet. The [AI disclosure](#ai-disclosure) at the end says who did what.
 
 ## 1. Initial idea notes (my own ideas)
 
@@ -25,9 +25,13 @@ The appeal is a calm, screen-light object that only needs a resting hand. Two th
 
 It also fits the demo badly. Meditation needs quiet and several minutes, and the room on December 7 will offer neither. A version without heart rate, where five finger pads follow a breathing rhythm for one minute, would be buildable, but it is a much smaller idea than the one I started with.
 
+![Sketch of a hand resting on five finger pads beside an ambient screen, with a watch sensing heart rate](assets/context/meditation-touchpad.png)
+
 ### Dance scorer
 
 This would be the most fun to watch. The problem is that the device is a camera, a TV and a model, so nothing physical is designed and none of the sensing or prototyping from the labs is used. It is also technically tight on a Pi 5. In Lab 5 a YOLO model ran at 8–11 fps with the Pi at 75 °C, and scoring a dance adds the problem of lining up the dancer's timing with the reference.
+
+![Sketch of a dancer copying a move shown on a large TV while a camera watches](assets/context/dance-scorer.png)
 
 ### Pizza maker
 
@@ -39,6 +43,8 @@ This is the idea I am taking forward.
 - **The parts are already in the kit.**
 
 Its weak points were the button for rolling dough, which is the least dough-like action of the four, and the lack of any goal. Section 3 addresses both.
+
+![Sketch of three players at the mill, rolling pin and oven stations facing one shared screen](assets/context/three-players-front.png)
 
 ## 3. Big idea
 
@@ -52,6 +58,12 @@ GIANTPIZZA GRILL!!! is a tabletop party game where people make one pizza togethe
 
 The stations run in order with overlap: the next one unlocks when the one before is about 70% done, so two people are usually active at once. A round lasts 60 to 90 seconds. At the end the pizza is compared with the order and scored in stars.
 
+### Storyboard
+
+![Six-frame storyboard of one round: a shared order, circling the mill, rolling together, passing to the oven, holding a distance, and comparing the pizza with the order](storyboard-giantpizza-render.png)
+
+Source files: [storyboard HTML](storyboard-giantpizza.html) and [Verplank notes](storyboard-giantpizza.md).
+
 **Who it is for.** Small groups at a table who want a short shared game, including classmates walking up at the final presentation with no explanation.
 
 **Why these choices.**
@@ -60,6 +72,23 @@ The stations run in order with overlap: the next one unlocks when the one before
 - **One shared screen keeps the group together.** In Lab 6 the shared display gave everyone the same place to look, and outside testers said that keeping the fire going together made it feel like telling the story together. Each Pi's small screen shows only its own station's progress.
 - **The oven forgives shaky hands.** Lab 6 testers found it hard to hold a hand inside a narrow distance band. The oven band is about twice as wide, and it counts total time in the band, so drifting out does not reset progress.
 - **Each station's shape shows what to do.** The screen highlights the active station with a short looping animation of the action, without written instructions.
+
+### Station forms
+
+Three cardboard forms were sketched for each station to compare before building. More are in [`assets/stations/`](assets/stations/).
+
+| Mill | Rolling pin | Oven |
+| --- | --- | --- |
+| ![A hand circling a joystick on a round cardboard drum](assets/stations/mill-form-2.png) | ![Two hands rolling a plain cardboard tube back and forth](assets/stations/rolling-form-1.png) | ![A hand held in front of the mouth of a domed cardboard oven](assets/stations/oven-form-2.png) |
+| ![Cutaway of the mill box with the joystick board under the top and a cable leaving the side](assets/stations/mill-cutaway.png) | No cutaway yet. How the IMU cable behaves while the tube rolls still needs a physical test. | ![Cutaway of the oven with the proximity sensor inside the mouth facing the hand](assets/stations/oven-cutaway.png) |
+
+### Shared screen
+
+Sketches of what the shared screen shows. More are in [`assets/screen/`](assets/screen/).
+
+| Order card | Baking | Score |
+| --- | --- | --- |
+| ![Order card showing a thin base and a dark bake](assets/screen/01-order-card.png) | ![A thin base browning inside an oven](assets/screen/04-baking.png) | ![Three stars above a thin base and its dark baked result](assets/screen/09-star-score.png) |
 
 **Core loop for the functional check-off.** A physical action at one station changes the pizza on the shared screen, and the result is scored against the order. The oven station is the first to be built end to end.
 
@@ -105,6 +134,12 @@ The design degrades in three levels. Each level is still a complete loop from ac
 2. **One player, three steps.** A single Pi with all three sensors, operated in sequence.
 3. **Oven only.** One station with an order card and star scoring.
 
+| Level 2: one player, three steps | Level 3: oven only |
+| --- | --- |
+| ![One player at a table with three stations wired to a single Raspberry Pi](assets/context/single-player-three-stations.png) | ![One player holding a hand near a single oven station with an order and stars on screen](assets/context/oven-only.png) |
+
+The wiring in the Level 2 sketch is schematic.
+
 Fall-backs for single parts:
 
 - **Rolling pin.** If the IMU is missing or unreliable by November 11, rolling becomes repeated presses of a Qwiic button.
@@ -128,4 +163,5 @@ I used Claude (Claude Code) as a critic and a drafting tool. The ideas, the dire
 
 - **Critique.** Claude raised the heart-rate, demo-setting and Pi-performance problems recorded in Section 2 and recommended the pizza maker.
 - **Design suggestions I adopted.** The IMU rolling pin in place of my button, the order card with star scoring, the overlapping station order, the wider cumulative oven band, the single-Pi baseline, the timeline and the fall-back levels.
+- **Illustrations.** At my direction, OpenAI Codex generated the storyboard, station, shared-screen and context sketches with its image tool, following my repository's storyboard style. The prompts are saved beside the images. They show the proposed design and are not my hand sketches.
 - **Writing.** Claude prepared the English wording of Section 1 from my notes without adding content, and drafted the rest of this document from our discussion.
