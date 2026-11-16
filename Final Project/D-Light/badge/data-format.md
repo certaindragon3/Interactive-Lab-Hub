@@ -147,8 +147,8 @@ Constraints the firmware must meet so that sections 2 and 3 hold:
 2. **UV range and resolution.** UV index 0 to at least 12 after conversion, resolution 0.05 UVI or finer. The record stores the raw count; the firmware states the gain and resolution it uses so the receiver can set `uvs_counts_per_uvi`.
 3. **Fresh readings.** After switching the LTR390 between light and UV mode, wait one full conversion before reading. The bring-up test saw a stale 0 otherwise, and a stale 0 is indistinguishable from darkness here.
 4. **Sequence numbers.** Never repeat or wrap within the project (at least 20 bits; 32 recommended). Keep counting across resets.
-5. **Capacity and full memory.** Hold at least 24 h of records (1,440). When full, overwrite the oldest records and keep counting. Stopping when full would break the dock-time anchor: the newest records would be missing and every remaining timestamp would be wrong.
-6. **Resets.** Record where a non-timed boot happened (for example the first `seq` after each such boot) so the receiver can fill `resets`.
+5. **Capacity and full memory.** Hold at least 24 h of records (1,440). When full, overwrite the oldest records and keep counting (decided by Jason, November 16, 2026). Stopping when full would break the dock-time anchor: the newest records would be missing and every remaining timestamp would be wrong.
+6. **Resets.** Keep a small separate list, outside the records, of the first `seq` after each non-timed boot, and send it at docking so the receiver can fill `resets`. The record itself stays three fields (decided by Jason, November 16, 2026).
 7. **Cadence.** Hold the 60 s period as closely as practical (section 3.3).
 8. **Battery.** Report the MAX17048 state of charge when docked.
 
